@@ -1,0 +1,92 @@
+{
+  "$schema": "https://a2a-protocol.org/schemas/agent-card/v1.0.0.json",
+  "schemaVersion": "1.0.0",
+  "name": "NeuroChem",
+  "description": "Interactive anatomical human brain pharmacology and pharmacokinetics explorer in Three.js with 10 compounds, 8 segmented brain structures, 5-stage timelines, multi-compound stacking, synergy/caution detection, and Web Audio sonification.",
+  "url": "https://hemanth.github.io/neurochem/",
+  "documentationUrl": "https://hemanth.github.io/neurochem/llms.txt",
+  "version": "1.0.0",
+  "provider": {
+    "organization": "Hemanth HM",
+    "url": "https://h3manth.com"
+  },
+  "capabilities": {
+    "webmcp": true,
+    "tools": [
+      {
+        "name": "select_compounds",
+        "description": "Select or combine up to 4 neuroactive compounds in NeuroChem, animate them in 3D, and return pharmacokinetics, active brain structures, and interactions.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "compounds": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["ssri", "snri", "caffeine", "theanine", "creatine", "stimulant", "psilocybin", "magnesium", "ketamine", "lithium"]
+              }
+            },
+            "phase": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 4
+            }
+          },
+          "required": ["compounds"]
+        }
+      },
+      {
+        "name": "set_timeline_phase",
+        "description": "Set the pharmacokinetic timeline phase (0=0h Ingestion, 1=1h Early, 2=Peak Tmax, 3=t1/2 Clearance, 4=Years Chronic).",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "phase": { "type": "integer", "minimum": 0, "maximum": 4 }
+          },
+          "required": ["phase"]
+        }
+      },
+      {
+        "name": "focus_brain_region",
+        "description": "Rotate the 3D human brain camera smoothly to face a specific anatomical structure.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "region": {
+              "type": "string",
+              "enum": ["pfc", "raphe", "locus", "hippocampus", "amygdala", "striatum", "thalamus", "cerebellum"]
+            }
+          },
+          "required": ["region"]
+        }
+      },
+      {
+        "name": "check_stack_interaction",
+        "description": "Evaluate pharmacological synergy or clinical safety caution for a combination of compounds.",
+        "parameters": {
+          "type": "object",
+          "properties": {
+            "compounds": {
+              "type": "array",
+              "items": { "type": "string" }
+            }
+          },
+          "required": ["compounds"]
+        }
+      },
+      {
+        "name": "list_compounds",
+        "description": "List all 10 neuroactive compounds with half-life, Tmax, target structures, and molecular reaction equations.",
+        "parameters": { "type": "object", "properties": {} }
+      }
+    ]
+  },
+  "communication": {
+    "preferredChannel": "webmcp",
+    "endpoints": {
+      "app": "https://hemanth.github.io/neurochem/",
+      "llms": "https://hemanth.github.io/neurochem/llms.txt",
+      "llmsFull": "https://hemanth.github.io/neurochem/llms-full.txt"
+    }
+  }
+}

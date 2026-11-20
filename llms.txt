@@ -1,0 +1,18 @@
+# NeuroChem
+
+> Interactive anatomical human brain pharmacokinetics explorer in Three.js. Drop and combine 10 neuroactive compounds onto a segmented human brain to watch where they act, how they spread, live synaptic neuro-reactions, and their 0h-to-years timeline.
+
+## Links
+
+- [Live App](https://hemanth.github.io/neurochem/): Interactive WebGL brain with URL state (`?compound=caffeine,theanine&phase=2`).
+- [Full Pharmacology Reference](https://hemanth.github.io/neurochem/llms-full.txt): Complete 10-compound pharmacokinetics, 5-stage timelines, target structures, and interaction rules.
+- [A2A Agent Card](https://hemanth.github.io/neurochem/agent-card.json): Machine-readable WebMCP tool schemas.
+- [Source Code](https://github.com/hemanth/neurochem): MIT licensed static web app.
+
+## WebMCP & Browser Agent API (`navigator.modelContext` / `window.neurochem`)
+
+- `select_compounds({ compounds, phase })`: Select or combine up to 4 compounds (`ssri`, `snri`, `caffeine`, `theanine`, `creatine`, `stimulant`, `psilocybin`, `magnesium`, `ketamine`, `lithium`) and set phase `0..4`.
+- `set_timeline_phase({ phase })`: Jump to `0` (0h Ingestion), `1` (1h Early), `2` (Peak Tmax), `3` (t1/2 Clearance), or `4` (Years Chronic).
+- `focus_brain_region({ region })`: Smoothly rotate camera to `pfc`, `raphe`, `locus`, `hippocampus`, `amygdala`, `striatum`, `thalamus`, or `cerebellum`.
+- `check_stack_interaction({ compounds })`: Return synergy or clinical caution notes for a stack.
+- `list_compounds()`: Return all 10 compounds with half-life, Tmax, target structures, and molecular reaction equations.

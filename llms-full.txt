@@ -1,0 +1,38 @@
+# NeuroChem — Full Pharmacology & Anatomical Reference
+
+Interactive Three.js human brain pharmacology visualizer mapping 10 neuroactive compounds across 8 anatomical brain structures, a 5-stage pharmacokinetic timeline (0h, 1h, Peak Tmax, t1/2 Clearance, Years Chronic), live 3D synaptic neuro-reactions, and multi-compound stack synergies and clinical cautions.
+
+## 8 Anatomical Brain Structures
+
+- `pfc`: Prefrontal Cortex (volumetric GLSL cortical lobe highlight on real folded gyri)
+- `raphe`: Midbrain · Dorsal Raphe Nuclei (serotonergic origin)
+- `locus`: Pons · Locus Coeruleus (noradrenergic origin)
+- `hippocampus`: Bilateral Hippocampus (memory consolidation, adult neurogenesis)
+- `amygdala`: Bilateral Amygdala (emotional salience and threat modulation)
+- `striatum`: Bilateral Striatum & Nucleus Accumbens (dopaminergic reward and motor gating)
+- `thalamus`: Thalamus (sensory relay and thalamocortical alpha rhythm)
+- `cerebellum`: Cerebellum (motor-cognitive timing and bioenergetic demand)
+
+## 10 Compounds & Pharmacokinetics
+
+1. **SSRIs (`ssri`)** | Escitalopram / Fluoxetine | t1/2: 27-32h | Tmax: 3-4h | Targets: `raphe`, `hippocampus`, `pfc`, `amygdala` | Reaction: SERT Blockade -> Up Synaptic 5-HT -> 5-HT1A/2A Firing -> Up CREB/BDNF
+2. **SNRIs (`snri`)** | Venlafaxine / Duloxetine | t1/2: 5-11h | Tmax: 2-4h | Targets: `locus`, `pfc`, `thalamus`, `striatum` | Reaction: SERT + NET Blockade -> Up 5-HT & NE -> Up Prefrontal DA Tone
+3. **Caffeine (`caffeine`)** | 1,3,7-Trimethylxanthine | t1/2: 4-6h | Tmax: 30-60m | Targets: `striatum`, `pfc`, `thalamus` | Reaction: A1/A2A Antagonism -> Disinhibits Striatal D2 -> Up Cortical Spikes
+4. **L-Theanine (`theanine`)** | Gamma-glutamylethylamide | t1/2: 1.5-2h | Tmax: 45-60m | Targets: `thalamus`, `hippocampus`, `pfc` | Reaction: AMPA/NMDA Modulation -> Up GABA + 8-12 Hz Thalamocortical Alpha
+5. **Creatine (`creatine`)** | Creatine Monohydrate | t1/2: 30-45d (brain pool) | Tmax: 2-4w | Targets: `pfc`, `striatum`, `cerebellum` | Reaction: SLC6A8 Uptake -> Cr + ATP <-> PCr + ADP -> Rapid Synaptic ATP Buffer
+6. **Stimulants (`stimulant`)** | Methylphenidate / Modafinil | t1/2: 2.5-3.5h | Tmax: 1.5-2h | Targets: `striatum`, `pfc`, `thalamus` | Reaction: DAT + NET Blockade -> Up Synaptic DA/NE -> D1 & alpha-2A Signal Gain
+7. **Psilocybin (`psilocybin`)** | Active: Psilocin | t1/2: 2.5-3h | Tmax: 75-90m | Targets: `pfc`, `thalamus`, `hippocampus`, `amygdala` | Reaction: 5-HT2A Agonism -> Layer V Glutamate Burst -> Global Entropy + TrkB
+8. **Mg Threonate (`magnesium`)** | Magnesium L-Threonate | t1/2: 4-5h | Tmax: 2h | Targets: `hippocampus`, `pfc` | Reaction: CSF Mg2+ Influx -> Restores NMDA Mg2+ Gate -> Up Hippocampal LTP
+9. **Ketamine (`ketamine`)** | Ketamine / Esketamine | t1/2: 2-3h | Tmax: 30-40m | Targets: `pfc`, `hippocampus`, `amygdala` | Reaction: GABA-Interneuron NMDA Block -> Glutamate Surge -> AMPA -> BDNF/mTORC1
+10. **Lithium (`lithium`)** | Lithium Orotate / Carbonate | t1/2: 18-24h | Tmax: 1-2h | Targets: `pfc`, `amygdala`, `hippocampus` | Reaction: IMPase & GSK-3beta Inhibition -> Down Excitotoxicity -> Up Bcl-2 Spine Density
+
+## Stack Synergies & Clinical Cautions
+
+- **Synergy**: `caffeine + theanine` (blunts vasoconstriction and jitteriness while keeping vigilance)
+- **Synergy**: `caffeine + theanine + creatine` (alertness + alpha smoothing + cortical PCr ATP buffer)
+- **Synergy**: `creatine + ssri` (prefrontal phosphocreatine augmentation)
+- **Synergy**: `ssri/snri + magnesium` (NMDA Mg2+ gating + monoamine plasticity)
+- **Caution**: `ssri + snri` (overlapping SERT blockade, serotonin syndrome risk)
+- **Caution**: `lithium + psilocybin` (seizure risk reported with classical psychedelics)
+- **Caution**: `ssri/snri + psilocybin` (5-HT2A downregulation blunts psilocin response)
+- **Caution**: `stimulant + caffeine` or `stimulant + snri` (additive sympathetic cardiovascular load)

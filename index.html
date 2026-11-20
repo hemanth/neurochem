@@ -1,0 +1,2894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>NeuroChem · Anatomical Brain Pharmacokinetics</title>
+  <meta name="description" content="Drop and combine neuroactive compounds onto a 3D anatomical human brain to watch where they act, how they spread, and their pharmacokinetic timeline from 0h to years.">
+  <link rel="canonical" href="https://hemanth.github.io/neurochem/">
+  <link rel="describedby" href="./llms.txt" type="text/plain">
+  <link rel="describedby" href="./agent-card.json" type="application/json">
+  <meta property="og:title" content="NeuroChem · Anatomical Brain Pharmacokinetics">
+  <meta property="og:description" content="Interactive anatomical human brain pharmacology explorer. Drop and combine SSRIs, SNRIs, Caffeine, L-Theanine, Creatine, Psilocybin, Ketamine, Lithium, and more across a 0h-to-years timeline.">
+  <meta property="og:url" content="https://hemanth.github.io/neurochem/">
+  <meta property="og:image" content="https://hemanth.github.io/neurochem/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:type" content="website">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="NeuroChem · Anatomical Brain Pharmacokinetics">
+  <meta name="twitter:description" content="Drop and combine neuroactive compounds onto an anatomical human brain to see where they act, live neuro-reactions, and 0h-to-years pharmacokinetics.">
+  <meta name="twitter:image" content="https://hemanth.github.io/neurochem/og-image.png">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "NeuroChem",
+    "url": "https://hemanth.github.io/neurochem/",
+    "description": "Interactive anatomical human brain pharmacology and pharmacokinetics visualizer with multi-compound stacking, synergy/caution detection, Web Audio sonification, and WebMCP agent tools.",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Any",
+    "author": {
+      "@type": "Person",
+      "name": "Hemanth HM",
+      "url": "https://h3manth.com"
+    }
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #F9F8F5;
+      --card-bg: rgba(255, 255, 255, 0.92);
+      --card-border: rgba(28, 25, 23, 0.08);
+      --text-main: #1C1917;
+      --text-muted: #67615C;
+      --text-sub: #9B948E;
+      --accent-pastel: #7C9BFF;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      height: 100dvh;
+      user-select: none;
+      touch-action: none;
+    }
+
+    #webgl-canvas {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Minimalist Top Floating Brand Pill */
+    .top-header {
+      position: fixed;
+      top: max(12px, env(safe-area-inset-top));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      background: rgba(255, 255, 255, 0.88);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      padding: 5px 10px 5px 14px;
+      border-radius: 999px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+    }
+
+    .sound-btn {
+      background: rgba(28, 25, 23, 0.05);
+      border: none;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      transition: background 0.15s ease, opacity 0.15s ease;
+      pointer-events: auto;
+    }
+
+    .sound-btn:hover {
+      background: rgba(28, 25, 23, 0.1);
+    }
+
+    .sound-btn.muted {
+      opacity: 0.45;
+    }
+
+    .app-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      color: var(--text-main);
+    }
+
+    .app-badge {
+      font-size: 9.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      background: rgba(28, 25, 23, 0.05);
+      padding: 2px 7px;
+      border-radius: 999px;
+    }
+
+    .rotate-hint {
+      font-size: 10.5px;
+      color: var(--text-sub);
+    }
+
+    /* Bottom Controller & Timeline Hub */
+    .bottom-hub {
+      position: fixed;
+      bottom: max(12px, env(safe-area-inset-bottom));
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 24px);
+      max-width: 660px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* Pharmacokinetics Timeline Card */
+    .pk-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 12px 15px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05), 0 1px 4px rgba(0, 0, 0, 0.03);
+      transition: padding 0.2s ease;
+    }
+
+    .pk-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pk-title-group {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      min-width: 0;
+      flex: 1;
+    }
+
+    .pk-drug-name {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14.5px;
+      font-weight: 700;
+      color: var(--text-main);
+      line-height: 1.2;
+    }
+
+    .pk-drug-name span:last-child {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pk-drug-dot {
+      width: 9px;
+      height: 9px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      background: var(--accent-pastel);
+      box-shadow: 0 0 8px currentColor;
+    }
+
+    .pk-drug-class {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding-left: 16px;
+    }
+
+    .pk-header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    .pk-stats {
+      display: flex;
+      gap: 10px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10.5px;
+    }
+
+    .stat-badge {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      line-height: 1.2;
+    }
+
+    .stat-label {
+      font-size: 8.5px;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .stat-val {
+      font-weight: 600;
+      color: var(--text-main);
+      white-space: nowrap;
+    }
+
+    /* Collapse Toggle */
+    .card-toggle-btn {
+      background: rgba(28, 25, 23, 0.05);
+      border: none;
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      transition: background 0.15s ease, color 0.15s ease;
+      font-size: 12px;
+    }
+
+    .card-toggle-btn:hover {
+      background: rgba(28, 25, 23, 0.1);
+      color: var(--text-main);
+    }
+
+    /* Collapsible Body */
+    .pk-body {
+      margin-top: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .pk-card.collapsed {
+      padding: 9px 14px;
+    }
+
+    .pk-card.collapsed .pk-body {
+      display: none;
+    }
+
+    .pk-card.collapsed .pk-drug-class {
+      display: none;
+    }
+
+    /* Scrubber Track */
+    .timeline-scrubber {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .scrubber-track {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      background: rgba(28, 25, 23, 0.055);
+      border-radius: 12px;
+      padding: 2.5px;
+      gap: 2px;
+    }
+
+    .timeline-step {
+      text-align: center;
+      padding: 5px 4px;
+      font-size: 10.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-radius: 9px;
+      cursor: pointer;
+      transition: all 0.16s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .timeline-step .step-short {
+      display: none;
+    }
+
+    .timeline-step.active {
+      color: var(--text-main);
+      background: #FFFFFF;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+    }
+
+    .play-btn {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-main);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      transition: transform 0.15s ease;
+      flex-shrink: 0;
+    }
+
+    .play-btn:active {
+      transform: scale(0.92);
+    }
+
+    /* Mechanism Description */
+    .pk-desc-box {
+      font-size: 11.5px;
+      line-height: 1.45;
+      color: var(--text-muted);
+      background: rgba(249, 248, 245, 0.85);
+      padding: 7px 10px;
+      border-radius: var(--radius-sm);
+      border-left: 3px solid var(--accent-pastel);
+      transition: border-color 0.25s ease;
+    }
+
+    .circuit-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .circuit-tag {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2.5px 7px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(28, 25, 23, 0.06);
+      color: var(--text-main);
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      transition: opacity 0.2s ease, border-color 0.2s ease, transform 0.12s ease;
+    }
+
+    .circuit-tag:hover {
+      border-color: rgba(28, 25, 23, 0.18);
+      transform: translateY(-1px);
+    }
+
+    .circuit-tag.inactive {
+      opacity: 0.42;
+    }
+
+    /* Tiny Chemical Pill Buttons */
+    .medicines-scroll {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 2px 2px 4px 2px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      touch-action: pan-x;
+    }
+
+    .medicines-scroll::-webkit-scrollbar {
+      display: none;
+    }
+
+    .pill-btn {
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      padding: 6px 12px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+    }
+
+    .pill-btn:hover {
+      background: #FFFFFF;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.07);
+    }
+
+    .pill-btn:active {
+      transform: scale(0.95);
+    }
+
+    .pill-btn.active {
+      background: #FFFFFF;
+      border-color: rgba(28, 25, 23, 0.22);
+      box-shadow: 0 3px 12px rgba(0, 0, 0, 0.09);
+      font-weight: 700;
+    }
+
+    .pill-indicator {
+      width: 7px;
+      height: 7px;
+      flex-shrink: 0;
+      border-radius: 50%;
+    }
+
+    /* Stack Mode & Preset Chips */
+    .stack-toggle-btn {
+      flex-shrink: 0;
+      background: rgba(28, 25, 23, 0.06);
+      border: 1px dashed rgba(28, 25, 23, 0.22);
+      padding: 6px 11px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-main);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.16s ease;
+    }
+
+    .stack-toggle-btn.active {
+      background: var(--text-main);
+      color: #FFFFFF;
+      border-style: solid;
+      border-color: var(--text-main);
+    }
+
+    .stack-presets {
+      display: none;
+      gap: 5px;
+      overflow-x: auto;
+      padding: 1px 2px 2px 2px;
+      scrollbar-width: none;
+    }
+
+    .stack-presets.visible {
+      display: flex;
+    }
+
+    .stack-presets::-webkit-scrollbar {
+      display: none;
+    }
+
+    .preset-chip {
+      flex-shrink: 0;
+      background: rgba(255, 255, 255, 0.86);
+      border: 1px solid var(--card-border);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-family: inherit;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .preset-chip:hover {
+      background: #FFFFFF;
+      color: var(--text-main);
+      border-color: rgba(28, 25, 23, 0.18);
+    }
+
+    .synergy-banner {
+      display: none;
+      font-size: 10.5px;
+      font-weight: 600;
+      padding: 5px 9px;
+      border-radius: 8px;
+      line-height: 1.35;
+    }
+
+    .synergy-banner.visible {
+      display: block;
+    }
+
+    .synergy-banner.synergy {
+      background: rgba(82, 201, 130, 0.13);
+      color: #1F6E43;
+      border: 1px solid rgba(82, 201, 130, 0.30);
+    }
+
+    .synergy-banner.caution {
+      background: rgba(245, 101, 120, 0.13);
+      color: #9E2134;
+      border: 1px solid rgba(245, 101, 120, 0.30);
+    }
+
+    .synergy-banner.neutral {
+      background: rgba(111, 143, 255, 0.11);
+      color: #344D9E;
+      border: 1px solid rgba(111, 143, 255, 0.25);
+    }
+
+    .reaction-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--text-main);
+      background: rgba(28, 25, 23, 0.04);
+      padding: 4px 8px;
+      border-radius: 7px;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+
+    .reaction-bar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .reaction-pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      animation: rxPulse 1.1s ease-in-out infinite;
+    }
+
+    @keyframes rxPulse {
+      0%, 100% { transform: scale(0.85); opacity: 0.55; }
+      50% { transform: scale(1.35); opacity: 1.0; }
+    }
+
+    .pk-dots-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+    }
+
+    /* Mobile Responsive Breakpoint */
+    @media (max-width: 600px) {
+      .top-header {
+        top: max(10px, env(safe-area-inset-top));
+        padding: 5px 12px;
+        gap: 6px;
+      }
+      .app-title {
+        font-size: 12.5px;
+      }
+      .app-badge {
+        font-size: 9px;
+        padding: 2px 6px;
+      }
+      .rotate-hint {
+        display: none;
+      }
+      .bottom-hub {
+        bottom: max(10px, env(safe-area-inset-bottom));
+        width: calc(100% - 16px);
+        gap: 6px;
+      }
+      .pk-card {
+        padding: 10px 12px;
+        border-radius: 16px;
+      }
+      .pk-header {
+        flex-wrap: wrap;
+        row-gap: 6px;
+      }
+      .pk-title-group {
+        flex: 1 1 65%;
+      }
+      .pk-drug-name {
+        font-size: 13.5px;
+      }
+      .pk-drug-class {
+        font-size: 10.5px;
+      }
+      .pk-header-right {
+        gap: 8px;
+      }
+      .pk-stats {
+        gap: 8px;
+        font-size: 9.5px;
+      }
+      .timeline-step {
+        font-size: 10px;
+        padding: 5px 2px;
+      }
+      .timeline-step .step-long {
+        display: none;
+      }
+      .timeline-step .step-short {
+        display: inline;
+      }
+      .pk-desc-box {
+        font-size: 11px;
+        padding: 6px 9px;
+      }
+      .circuit-tag {
+        font-size: 9.5px;
+        padding: 2px 6px;
+      }
+      .pill-btn {
+        padding: 6px 11px;
+        font-size: 11px;
+      }
+    }
+
+    /* Short Landscape / Small Height Screens */
+    @media (max-height: 540px) {
+      .pk-desc-box {
+        display: none;
+      }
+      .pk-card {
+        padding: 8px 12px;
+      }
+      .pk-body {
+        margin-top: 6px;
+        gap: 6px;
+      }
+    }
+
+    /* Loading Overlay */
+    #loader-overlay {
+      position: fixed;
+      inset: 0;
+      background: #F9F8F5;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.4s ease;
+    }
+
+    .spinner {
+      width: 34px;
+      height: 34px;
+      border: 3px solid rgba(28, 25, 23, 0.07);
+      border-top-color: #F2949E;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 10px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loader-text {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+  </style>
+
+  <!-- Load Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/18.6.4/tween.umd.js"></script>
+</head>
+<body>
+
+  <!-- Loading State -->
+  <div id="loader-overlay">
+    <div class="spinner"></div>
+    <div class="loader-text" id="loader-text">Loading 3D Anatomical Brain...</div>
+  </div>
+
+  <!-- Minimal Brand Pill -->
+  <div class="top-header">
+    <span class="app-title">NeuroChem</span>
+    <span class="app-badge">Pharmacokinetics</span>
+    <span class="rotate-hint">· Drag to rotate</span>
+    <button class="sound-btn" id="soundBtn" aria-label="Toggle subtle tones" title="Toggle subtle musical tones">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" id="soundIcon">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+      </svg>
+    </button>
+  </div>
+
+  <!-- WebGL Canvas Container -->
+  <div id="webgl-canvas"></div>
+
+  <!-- Bottom Pharmacokinetics Hub -->
+  <div class="bottom-hub" id="bottomHub">
+    <!-- Timeline Card (Compact & Collapsible) -->
+    <div class="pk-card" id="pkCard">
+      <div class="pk-header">
+        <div class="pk-title-group">
+          <div class="pk-drug-name">
+            <span class="pk-dots-group" id="cardDots"><span class="pk-drug-dot" id="cardDot"></span></span>
+            <span id="cardName">SSRIs (Escitalopram)</span>
+          </div>
+          <div class="pk-drug-class" id="cardClass">Selective Serotonin Reuptake Inhibitor</div>
+        </div>
+        <div class="pk-header-right">
+          <div class="pk-stats">
+            <div class="stat-badge">
+              <span class="stat-label">t½</span>
+              <span class="stat-val" id="cardHalfLife">27–32h</span>
+            </div>
+            <div class="stat-badge">
+              <span class="stat-label">Tmax</span>
+              <span class="stat-val" id="cardTmax">3–4h</span>
+            </div>
+          </div>
+          <button class="card-toggle-btn" id="cardToggleBtn" aria-label="Toggle details" title="Minimize / Expand">▾</button>
+        </div>
+      </div>
+
+      <div class="pk-body" id="pkBody">
+        <!-- 5-Stage Pharmacokinetics Timeline Scrubber -->
+        <div class="timeline-scrubber">
+          <button class="play-btn" id="playBtn" aria-label="Auto-play timeline" title="Auto-play timeline">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" id="playIcon">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+          </button>
+          <div class="scrubber-track" id="scrubberTrack">
+            <div class="timeline-step active" data-step="0"><span class="step-long">0h Ingestion</span><span class="step-short">0h</span></div>
+            <div class="timeline-step" data-step="1"><span class="step-long">1h Early</span><span class="step-short">1h</span></div>
+            <div class="timeline-step" data-step="2"><span class="step-long">Peak (Tmax)</span><span class="step-short">Peak</span></div>
+            <div class="timeline-step" data-step="3"><span class="step-long">t½ Clearance</span><span class="step-short">t½</span></div>
+            <div class="timeline-step" data-step="4"><span class="step-long">Years (Chronic)</span><span class="step-short">Years</span></div>
+          </div>
+        </div>
+
+        <!-- Synergy / Interaction Banner (Shown when 2+ compounds are stacked) -->
+        <div class="synergy-banner" id="synergyBanner"></div>
+
+        <!-- Live Molecular Neuro-Reaction Pathway -->
+        <div class="reaction-bar" id="reactionBar">
+          <span class="reaction-pulse-dot" id="reactionDot"></span>
+          <span id="reactionText">SERT Blockade → ↑ Synaptic 5-HT → 5-HT1A/2A Firing</span>
+        </div>
+
+        <!-- Dynamic Mechanism Description -->
+        <div class="pk-desc-box" id="cardDesc">
+          Oral dissolution. Escitalopram crosses the blood-brain barrier via passive lipid diffusion. SERT transporter binding is below 10%; no acute subjective shift.
+        </div>
+
+        <!-- Active Neural Circuits -->
+        <div class="circuit-tags" id="cardCircuits"></div>
+      </div>
+    </div>
+
+    <!-- Curated Stack Presets (Visible in Combine/Stack Mode) -->
+    <div class="stack-presets" id="stackPresets"></div>
+
+    <!-- Chemical Selector (Tiny Pastel Pill Buttons + Combine Toggle) -->
+    <div class="medicines-scroll" id="medicinePills"></div>
+  </div>
+
+  <script>
+    // Embedded TWEEN Fallback if CDN fails
+    if (typeof TWEEN === 'undefined') {
+      window.TWEEN = {
+        _tweens: [],
+        getAll: function() { return this._tweens; },
+        removeAll: function() { this._tweens = []; },
+        add: function(t) { this._tweens.push(t); },
+        remove: function(t) {
+          const i = this._tweens.indexOf(t);
+          if (i !== -1) this._tweens.splice(i, 1);
+        },
+        update: function(time) {
+          time = time || performance.now();
+          let i = 0;
+          while (i < this._tweens.length) {
+            if (this._tweens[i].update(time)) {
+              i++;
+            } else {
+              this._tweens.splice(i, 1);
+            }
+          }
+          return true;
+        },
+        Tween: function(obj) {
+          let _obj = obj, _to = {}, _duration = 1000, _start = 0, _startTime = 0, _easing = t => t, _onUpdate = null, _onComplete = null;
+          this.to = function(props, dur) { _to = props; if (dur !== undefined) _duration = dur; return this; };
+          this.easing = function(e) { _easing = e; return this; };
+          this.onUpdate = function(cb) { _onUpdate = cb; return this; };
+          this.onComplete = function(cb) { _onComplete = cb; return this; };
+          this.start = function(time) {
+            _startTime = (time !== undefined) ? time : performance.now();
+            _start = {};
+            for (let k in _to) _start[k] = _obj[k];
+            TWEEN.add(this);
+            return this;
+          };
+          this.update = function(time) {
+            const elapsed = time - _startTime;
+            const progress = Math.min(1, Math.max(0, elapsed / _duration));
+            const eased = _easing(progress);
+            for (let k in _to) {
+              _obj[k] = _start[k] + (_to[k] - _start[k]) * eased;
+            }
+            if (_onUpdate) _onUpdate(_obj, progress);
+            if (progress >= 1) {
+              if (_onComplete) _onComplete(_obj);
+              return false;
+            }
+            return true;
+          };
+        },
+        Easing: {
+          Quadratic: { Out: t => t * (2 - t), InOut: t => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t },
+          Cubic: { In: t => t * t * t, Out: t => (--t) * t * t + 1 }
+        }
+      };
+    }
+
+    // --- PHARMACOLOGY DATASET (10 COMPOUNDS) ---
+    const MEDICINES = [
+      {
+        id: 'ssri',
+        name: 'SSRIs',
+        detailName: 'SSRIs (Escitalopram)',
+        subtitle: 'Selective Serotonin Reuptake Inhibitor',
+        colorHex: '#8AA7FF',
+        colorInt: 0x6F8FFF,
+        tHalf: '27–32h',
+        tMax: '3–4h',
+        targets: ['raphe', 'hippocampus', 'pfc', 'amygdala'],
+        timeline: {
+          0: {
+            desc: 'Oral dissolution. Escitalopram crosses the blood-brain barrier via passive lipid diffusion. SERT transporter binding is below 10%; no acute subjective shift.',
+            intensity: 0.35,
+            flowSpeed: 0.35,
+            glowNodes: ['raphe']
+          },
+          1: {
+            desc: 'Rising plasma concentration reaches dorsal raphe nuclei. SERT blockade hits 35–45%, preventing serotonin reuptake into presynaptic vesicles.',
+            intensity: 0.65,
+            flowSpeed: 0.65,
+            glowNodes: ['raphe', 'hippocampus']
+          },
+          2: {
+            desc: 'Peak plasma level (Tmax). 80%+ SERT occupancy across dorsal raphe, prefrontal cortex, and hippocampus. Extracellular 5-HT surges in synaptic clefts.',
+            intensity: 1.0,
+            flowSpeed: 1.15,
+            glowNodes: ['raphe', 'hippocampus', 'pfc', 'amygdala']
+          },
+          3: {
+            desc: 'Hepatic CYP2C19/CYP3A4 demethylation clears parent drug. SERT occupancy recedes to ~50%; consistent daily dosing maintains steady state.',
+            intensity: 0.55,
+            flowSpeed: 0.45,
+            glowNodes: ['raphe', 'pfc']
+          },
+          4: {
+            desc: 'Multi-year use downregulates inhibitory 5-HT1A autoreceptors, elevates BDNF, and stimulates adult neurogenesis in the hippocampal dentate gyrus.',
+            intensity: 0.90,
+            flowSpeed: 0.75,
+            glowNodes: ['raphe', 'hippocampus', 'pfc', 'amygdala'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'snri',
+        name: 'SNRIs',
+        detailName: 'SNRIs (Venlafaxine)',
+        subtitle: 'Serotonin-Norepinephrine Reuptake Inhibitor',
+        colorHex: '#7DD49A',
+        colorInt: 0x52C982,
+        tHalf: '5–11h',
+        tMax: '2–4h',
+        targets: ['locus', 'pfc', 'thalamus', 'striatum'],
+        timeline: {
+          0: {
+            desc: 'Oral delivery. Venlafaxine enters systemic circulation; hepatic CYP2D6 begins converting it into active metabolite O-desmethylvenlafaxine (ODV).',
+            intensity: 0.35,
+            flowSpeed: 0.35,
+            glowNodes: ['locus']
+          },
+          1: {
+            desc: 'Simultaneous SERT and NET transporter blockade initiates in locus coeruleus and descending pain pathways. Norepinephrine tone rises.',
+            intensity: 0.68,
+            flowSpeed: 0.68,
+            glowNodes: ['locus', 'pfc']
+          },
+          2: {
+            desc: 'Peak dual transporter saturation. Locus coeruleus firing elevates alertness while cortical NET inhibition raises prefrontal dopamine.',
+            intensity: 1.0,
+            flowSpeed: 1.2,
+            glowNodes: ['locus', 'pfc', 'thalamus', 'striatum']
+          },
+          3: {
+            desc: 'Short half-life drives rapid renal clearance; extended-release dosing buffers against adrenergic rebound.',
+            intensity: 0.50,
+            flowSpeed: 0.42,
+            glowNodes: ['locus', 'pfc']
+          },
+          4: {
+            desc: 'Long-term dual inhibition recalibrates beta-adrenergic receptors, dampens central pain sensitization, and stabilizes executive attention.',
+            intensity: 0.88,
+            flowSpeed: 0.72,
+            glowNodes: ['locus', 'pfc', 'thalamus'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'caffeine',
+        name: 'Caffeine',
+        detailName: 'Caffeine',
+        subtitle: 'Adenosine A1 / A2A Receptor Antagonist',
+        colorHex: '#FFAE7A',
+        colorInt: 0xFF9052,
+        tHalf: '4–6h',
+        tMax: '30–60m',
+        targets: ['striatum', 'pfc', 'thalamus'],
+        timeline: {
+          0: {
+            desc: 'Hydrophobic molecules bypass first-pass delays, absorbing rapidly through gastric mucosa directly into carotid cerebral circulation.',
+            intensity: 0.38,
+            flowSpeed: 0.45,
+            glowNodes: ['striatum']
+          },
+          1: {
+            desc: 'Reaches maximal brain concentration. Blocks A1/A2A adenosine receptors, disinhibiting striatal D2 dopamine signaling and boosting vigilance.',
+            intensity: 1.0,
+            flowSpeed: 1.25,
+            glowNodes: ['striatum', 'pfc', 'thalamus']
+          },
+          2: {
+            desc: 'Basal forebrain adenosine buildup is masked. Cerebral blood flow drops ~20% via vasoconstriction while cortical arousal stays elevated.',
+            intensity: 0.85,
+            flowSpeed: 0.90,
+            glowNodes: ['striatum', 'pfc', 'thalamus']
+          },
+          3: {
+            desc: 'CYP1A2 breaks caffeine into paraxanthine and theobromine. Freed adenosine floods receptors en masse, causing rebound fatigue.',
+            intensity: 0.42,
+            flowSpeed: 0.35,
+            glowNodes: ['striatum']
+          },
+          4: {
+            desc: 'Multi-year daily intake upregulates adenosine A1/A2A receptor density, shifting baseline alertness so morning doses restore normal tone.',
+            intensity: 0.80,
+            flowSpeed: 0.68,
+            glowNodes: ['striatum', 'pfc', 'thalamus'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'theanine',
+        name: 'L-Theanine',
+        detailName: 'L-Theanine',
+        subtitle: 'Glutamate Modulator & Alpha Wave Inducer',
+        colorHex: '#BCA6FF',
+        colorInt: 0x9B7EFF,
+        tHalf: '1.5–2h',
+        tMax: '45–60m',
+        targets: ['thalamus', 'hippocampus', 'pfc'],
+        timeline: {
+          0: {
+            desc: 'Crosses the blood-brain barrier intact via LAT1 neutral amino acid transporters without sedation.',
+            intensity: 0.35,
+            flowSpeed: 0.38,
+            glowNodes: ['thalamus']
+          },
+          1: {
+            desc: 'Low-affinity antagonism at AMPA/NMDA receptors curbs glutamate noise and synchronizes thalamocortical 8–12 Hz alpha waves.',
+            intensity: 1.0,
+            flowSpeed: 1.1,
+            glowNodes: ['thalamus', 'hippocampus', 'pfc']
+          },
+          2: {
+            desc: 'Promotes GABA synthesis and relaxed focus while smoothing stimulant-induced vasoconstriction and jitteriness.',
+            intensity: 0.80,
+            flowSpeed: 0.72,
+            glowNodes: ['thalamus', 'pfc']
+          },
+          3: {
+            desc: 'Rapid enzymatic cleavage and renal filtration return neurochemistry smoothly to baseline with no rebound.',
+            intensity: 0.38,
+            flowSpeed: 0.30,
+            glowNodes: ['thalamus']
+          },
+          4: {
+            desc: 'Habitual long-term intake protects hippocampal dendritic arbors from chronic stress-induced glutamate excitotoxicity.',
+            intensity: 0.78,
+            flowSpeed: 0.65,
+            glowNodes: ['thalamus', 'hippocampus'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'creatine',
+        name: 'Creatine',
+        detailName: 'Creatine Monohydrate',
+        subtitle: 'Cerebral Bioenergetic Phosphagen Buffer',
+        colorHex: '#6FD8EE',
+        colorInt: 0x38C2E0,
+        tHalf: '30–45d',
+        tMax: '2–4w',
+        targets: ['pfc', 'striatum', 'cerebellum'],
+        timeline: {
+          0: {
+            desc: 'Enters brain via specialized SLC6A8 creatine transporters into cortical astrocytes and high-demand pyramidal neurons.',
+            intensity: 0.32,
+            flowSpeed: 0.32,
+            glowNodes: ['pfc']
+          },
+          1: {
+            desc: 'Mitochondrial creatine kinase phosphorylates creatine into phosphocreatine (PCr), expanding the rapid ATP regeneration pool.',
+            intensity: 0.58,
+            flowSpeed: 0.60,
+            glowNodes: ['pfc', 'cerebellum']
+          },
+          2: {
+            desc: 'Buffers cellular ATP during intense working-memory load, preventing synaptic metabolic fatigue across cortex and cerebellum.',
+            intensity: 0.88,
+            flowSpeed: 0.90,
+            glowNodes: ['pfc', 'cerebellum', 'striatum']
+          },
+          3: {
+            desc: 'Full loading expands total cerebral PCr stores by 8–10%, sustaining executive performance under sleep deprivation.',
+            intensity: 1.0,
+            flowSpeed: 1.15,
+            glowNodes: ['pfc', 'cerebellum', 'striatum']
+          },
+          4: {
+            desc: 'Multi-year retention stabilizes mitochondrial permeability transition pores, bolstering long-term cellular bioenergetic resilience.',
+            intensity: 0.90,
+            flowSpeed: 0.78,
+            glowNodes: ['pfc', 'cerebellum', 'striatum'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'stimulant',
+        name: 'Stimulants',
+        detailName: 'Methylphenidate',
+        subtitle: 'DAT / NET Catecholamine Reuptake Inhibitor',
+        colorHex: '#FF949D',
+        colorInt: 0xF56578,
+        tHalf: '2.5–3.5h',
+        tMax: '1.5–2h',
+        targets: ['striatum', 'pfc', 'thalamus'],
+        timeline: {
+          0: {
+            desc: 'Lipophilic absorption rapidly delivers compound across brain capillaries into basal ganglia and prefrontal beds.',
+            intensity: 0.35,
+            flowSpeed: 0.42,
+            glowNodes: ['striatum']
+          },
+          1: {
+            desc: 'Striatal dopamine transporter (DAT) occupancy exceeds 50%, increasing synaptic dopamine and task salience.',
+            intensity: 0.75,
+            flowSpeed: 0.85,
+            glowNodes: ['striatum', 'pfc']
+          },
+          2: {
+            desc: '70%+ DAT/NET blockade optimizes prefrontal D1 dopamine and alpha-2A adrenergic signal-to-noise ratio for working memory.',
+            intensity: 1.0,
+            flowSpeed: 1.30,
+            glowNodes: ['striatum', 'pfc', 'thalamus']
+          },
+          3: {
+            desc: 'CES1A1 esterase cleaves methylphenidate into inactive ritalinic acid; synaptic dopamine drops, creating a brief focus dip.',
+            intensity: 0.45,
+            flowSpeed: 0.38,
+            glowNodes: ['striatum']
+          },
+          4: {
+            desc: 'Long-term therapeutic dosing reinforces corticostriatal executive pathways while DAT expression adapts homeostatically.',
+            intensity: 0.82,
+            flowSpeed: 0.75,
+            glowNodes: ['striatum', 'pfc'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'psilocybin',
+        name: 'Psilocybin',
+        detailName: 'Psilocybin (Psilocin)',
+        subtitle: '5-HT2A Serotonergic Receptor Agonist',
+        colorHex: '#96E8A5',
+        colorInt: 0x4AD47A,
+        tHalf: '2.5–3h',
+        tMax: '75–90m',
+        targets: ['pfc', 'thalamus', 'hippocampus', 'amygdala'],
+        timeline: {
+          0: {
+            desc: 'Hepatic alkaline phosphatases dephosphorylate psilocybin into lipid-soluble psilocin for rapid BBB crossing.',
+            intensity: 0.32,
+            flowSpeed: 0.35,
+            glowNodes: ['thalamus']
+          },
+          1: {
+            desc: 'Psilocin activates 5-HT2A receptors on Layer V cortical pyramidal neurons, driving widespread asynchronous glutamate bursts.',
+            intensity: 0.72,
+            flowSpeed: 0.82,
+            glowNodes: ['pfc', 'thalamus']
+          },
+          2: {
+            desc: 'Default Mode Network alpha coherence dissolves; cross-network entropy and global functional connectivity peak.',
+            intensity: 1.0,
+            flowSpeed: 1.35,
+            glowNodes: ['pfc', 'thalamus', 'hippocampus', 'amygdala']
+          },
+          3: {
+            desc: 'Hepatic glucuronidation clears psilocin. Cortical entropy settles into a lucid, emotionally open integration window.',
+            intensity: 0.55,
+            flowSpeed: 0.48,
+            glowNodes: ['pfc', 'hippocampus']
+          },
+          4: {
+            desc: 'TrkB-mediated dendritic spinogenesis creates lasting structural synaptic flexibility and cognitive openness.',
+            intensity: 0.90,
+            flowSpeed: 0.80,
+            glowNodes: ['pfc', 'hippocampus', 'thalamus'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'magnesium',
+        name: 'Mg Threonate',
+        detailName: 'Magnesium L-Threonate',
+        subtitle: 'Brain-Bioavailable NMDA / GABA Modulator',
+        colorHex: '#F5D56E',
+        colorInt: 0xEAB738,
+        tHalf: '4–5h',
+        tMax: '2h',
+        targets: ['hippocampus', 'pfc'],
+        timeline: {
+          0: {
+            desc: 'L-threonate chelate actively shuttles Mg²⁺ ions across blood-brain barrier tight junctions into cerebrospinal fluid.',
+            intensity: 0.32,
+            flowSpeed: 0.35,
+            glowNodes: ['hippocampus']
+          },
+          1: {
+            desc: 'Elevates CSF free magnesium by ~15%, restoring the voltage-dependent Mg²⁺ gate inside NMDA receptor channels.',
+            intensity: 0.62,
+            flowSpeed: 0.62,
+            glowNodes: ['hippocampus', 'pfc']
+          },
+          2: {
+            desc: 'Dampens background synaptic noise while sharpening burst-evoked long-term potentiation (LTP) for memory encoding.',
+            intensity: 1.0,
+            flowSpeed: 1.10,
+            glowNodes: ['hippocampus', 'pfc']
+          },
+          3: {
+            desc: 'Ions equilibrate across astrocytes and neuronal organelles; CSF pools remain buffered longer than standard magnesium salts.',
+            intensity: 0.55,
+            flowSpeed: 0.42,
+            glowNodes: ['hippocampus']
+          },
+          4: {
+            desc: 'Chronic elevation upregulates NR2B NMDA subunits, expanding hippocampal CA1 synaptic bouton density.',
+            intensity: 0.86,
+            flowSpeed: 0.72,
+            glowNodes: ['hippocampus', 'pfc'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'ketamine',
+        name: 'Ketamine',
+        detailName: 'Ketamine / Esketamine',
+        subtitle: 'NMDA Antagonist & mTORC1 Activator',
+        colorHex: '#73D9D5',
+        colorInt: 0x3AC9C2,
+        tHalf: '2–3h',
+        tMax: '30–40m',
+        targets: ['pfc', 'hippocampus', 'amygdala'],
+        timeline: {
+          0: {
+            desc: 'Rapid lipophilic BBB penetration; binds the uncompetitive channel pore of open NMDA receptors.',
+            intensity: 0.38,
+            flowSpeed: 0.45,
+            glowNodes: ['pfc']
+          },
+          1: {
+            desc: 'Preferential NMDA block on inhibitory GABA interneurons disinhibits pyramidal cells, triggering a rapid glutamate burst.',
+            intensity: 1.0,
+            flowSpeed: 1.35,
+            glowNodes: ['pfc', 'hippocampus', 'amygdala']
+          },
+          2: {
+            desc: 'AMPA activation drives calcium influx and rapid exocytosis of BDNF vesicles, activating TrkB-mTORC1 cascades.',
+            intensity: 0.90,
+            flowSpeed: 0.95,
+            glowNodes: ['pfc', 'hippocampus', 'amygdala']
+          },
+          3: {
+            desc: 'CYP3A4/CYP2B6 converts ketamine to norketamine and HNK; acute dissociation clears while synaptogenesis continues.',
+            intensity: 0.50,
+            flowSpeed: 0.45,
+            glowNodes: ['pfc']
+          },
+          4: {
+            desc: 'Repeated clinical protocols restore prefrontal and hippocampal dendritic spines lost to chronic stress.',
+            intensity: 0.90,
+            flowSpeed: 0.78,
+            glowNodes: ['pfc', 'hippocampus', 'amygdala'],
+            chronicNetwork: true
+          }
+        }
+      },
+      {
+        id: 'lithium',
+        name: 'Lithium',
+        detailName: 'Lithium',
+        subtitle: 'GSK-3β Inhibitor & Neuroprotective Stabilizer',
+        colorHex: '#EEA3EE',
+        colorInt: 0xD673D6,
+        tHalf: '18–24h',
+        tMax: '1–2h',
+        targets: ['pfc', 'amygdala', 'hippocampus'],
+        timeline: {
+          0: {
+            desc: 'Monovalent Li⁺ ions enter excitable cortical and limbic neurons via voltage-gated sodium channels.',
+            intensity: 0.32,
+            flowSpeed: 0.32,
+            glowNodes: ['pfc']
+          },
+          1: {
+            desc: 'Inhibits inositol monophosphatase (IMPase), tempering hyperactive phosphoinositide second-messenger signaling.',
+            intensity: 0.62,
+            flowSpeed: 0.62,
+            glowNodes: ['pfc', 'amygdala']
+          },
+          2: {
+            desc: 'Competes with magnesium cofactors to suppress GSK-3β, shielding neurons from pro-apoptotic stress pathways.',
+            intensity: 1.0,
+            flowSpeed: 1.15,
+            glowNodes: ['pfc', 'amygdala', 'hippocampus']
+          },
+          3: {
+            desc: 'Filtered exclusively by renal glomeruli with ~80% proximal tubule reabsorption, maintaining stable intracellular levels.',
+            intensity: 0.55,
+            flowSpeed: 0.42,
+            glowNodes: ['pfc', 'hippocampus']
+          },
+          4: {
+            desc: 'Multi-year use boosts anti-apoptotic Bcl-2 and measurably expands hippocampal and prefrontal grey matter volume.',
+            intensity: 0.88,
+            flowSpeed: 0.75,
+            glowNodes: ['pfc', 'amygdala', 'hippocampus'],
+            chronicNetwork: true
+          }
+        }
+      }
+    ];
+
+    // Region display names, 3D anatomical anchor centers & optimal 3D camera focus directions
+    const BRAIN_REGIONS = {
+      pfc: { name: 'Prefrontal Cortex', anchor: new THREE.Vector3(0.0, 2.0, 6.8), left: new THREE.Vector3(2.4, 1.8, 5.8), right: new THREE.Vector3(-2.4, 1.8, 5.8), camDir: new THREE.Vector3(-0.46, 0.22, 0.86) },
+      raphe: { name: 'Midbrain · Raphe', anchor: new THREE.Vector3(0.0, -2.9, -0.85), camDir: new THREE.Vector3(-0.76, -0.14, 0.63) },
+      locus: { name: 'Pons · Locus Coeruleus', anchor: new THREE.Vector3(0.0, -4.7, -1.0), camDir: new THREE.Vector3(-0.74, -0.22, 0.64) },
+      hippocampus: { name: 'Hippocampus', left: new THREE.Vector3(2.8, -1.7, -0.2), right: new THREE.Vector3(-2.8, -1.7, -0.2), camDir: new THREE.Vector3(-0.92, 0.08, 0.38) },
+      amygdala: { name: 'Amygdala', left: new THREE.Vector3(2.4, -2.0, 1.9), right: new THREE.Vector3(-2.4, -2.0, 1.9), camDir: new THREE.Vector3(-0.84, 0.04, 0.54) },
+      striatum: { name: 'Striatum & Accumbens', left: new THREE.Vector3(2.2, 0.7, 1.4), right: new THREE.Vector3(-2.2, 0.7, 1.4), camDir: new THREE.Vector3(-0.68, 0.34, 0.65) },
+      thalamus: { name: 'Thalamus', left: new THREE.Vector3(1.1, -0.6, -0.7), right: new THREE.Vector3(-1.1, -0.6, -0.7), camDir: new THREE.Vector3(-0.82, 0.26, 0.51) },
+      cerebellum: { name: 'Cerebellum', anchor: new THREE.Vector3(0.0, -5.2, -4.5), left: new THREE.Vector3(2.6, -5.0, -4.1), right: new THREE.Vector3(-2.6, -5.0, -4.1), camDir: new THREE.Vector3(-0.66, -0.10, -0.74) }
+    };
+
+    // --- SUBTLE WEB AUDIO HARMONIC SYNTH ---
+    const SOUND_CHORDS = {
+      ssri:       [261.63, 329.63, 392.00, 493.88], // Cmaj7 (warm uplift)
+      snri:       [293.66, 369.99, 440.00, 554.37], // Dmaj7 (bright clarity)
+      caffeine:   [329.63, 493.88, 659.25],         // E5 crisp open fifth
+      theanine:   [220.00, 261.63, 329.63, 392.00], // Am7 calm alpha
+      creatine:   [246.94, 369.99, 493.88],         // B5 bioenergetic chime
+      stimulant:  [349.23, 440.00, 523.25, 659.25], // Fmaj7 crisp focus
+      psilocybin: [261.63, 329.63, 369.99, 493.88], // C Lydian shimmer
+      magnesium:  [196.00, 246.94, 293.66, 392.00], // Gadd9 soothing
+      ketamine:   [233.08, 293.66, 349.23, 466.16], // Bbmaj7 airy float
+      lithium:    [174.61, 220.00, 261.63, 329.63]  // Fmaj7 deep grounding
+    };
+
+    let audioCtx = null;
+    let soundEnabled = true;
+
+    function ensureAudioCtx() {
+      if (!soundEnabled) return null;
+      if (!audioCtx) {
+        const AC = window.AudioContext || window.webkitAudioContext;
+        if (!AC) return null;
+        audioCtx = new AC();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume().catch(() => {});
+      }
+      return audioCtx;
+    }
+
+    function playTone(freq, startOffset = 0, duration = 0.7, gainPeak = 0.045, type = 'sine') {
+      const ctx = ensureAudioCtx();
+      if (!ctx) return;
+      const now = ctx.currentTime + startOffset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, now);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(1600, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(gainPeak, now + 0.035);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + duration + 0.04);
+    }
+
+    function playDropSound(drugId) {
+      const ctx = ensureAudioCtx();
+      if (!ctx) return;
+      // Soft water-droplet pitch plink
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(520, now);
+      osc.frequency.exponentialRampToValueAtTime(860, now + 0.09);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.04, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.16);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.18);
+
+      // Gentle harmonic arpeggio as chemical spreads
+      const chord = SOUND_CHORDS[drugId] || SOUND_CHORDS.ssri;
+      chord.forEach((f, idx) => {
+        playTone(f, 0.12 + idx * 0.085, 1.05, 0.032, idx % 2 === 0 ? 'sine' : 'triangle');
+      });
+    }
+
+    function playStepSound(drugId, stepIdx) {
+      const chord = SOUND_CHORDS[drugId] || SOUND_CHORDS.ssri;
+      const root = chord[0];
+      const third = chord[1] || root * 1.25;
+      const fifth = chord[2] || root * 1.5;
+      const top = chord[3] || root * 2.0;
+
+      // Distinct musical progression across the 5 pharmacokinetic phases
+      if (stepIdx === 0) {
+        // 0h Ingestion: soft low root plink
+        playTone(root * 0.75, 0, 0.55, 0.026, 'sine');
+      } else if (stepIdx === 1) {
+        // 1h Early: gentle ascending third
+        playTone(root, 0, 0.50, 0.026, 'sine');
+        playTone(third, 0.09, 0.55, 0.024, 'triangle');
+      } else if (stepIdx === 2) {
+        // Peak (Tmax): radiant ascending harmonic bloom
+        playTone(third, 0, 0.55, 0.026, 'sine');
+        playTone(fifth, 0.08, 0.65, 0.030, 'sine');
+        playTone(top, 0.16, 0.85, 0.028, 'triangle');
+      } else if (stepIdx === 3) {
+        // t½ Clearance: soft descending taper
+        playTone(fifth, 0, 0.45, 0.022, 'sine');
+        playTone(third * 0.94, 0.11, 0.60, 0.020, 'sine');
+      } else {
+        // Years (Chronic): warm sustained harmonic resonance
+        playTone(root * 0.5, 0, 1.15, 0.024, 'triangle');
+        playTone(root, 0.06, 1.10, 0.026, 'sine');
+        playTone(fifth, 0.14, 1.15, 0.022, 'sine');
+      }
+
+      // Subtle layered overtone when combining multiple compounds
+      if (typeof activeDrugs !== 'undefined' && activeDrugs.length > 1) {
+        const second = activeDrugs[0].id === drugId ? activeDrugs[1] : activeDrugs[0];
+        const sc = SOUND_CHORDS[second.id];
+        if (sc) playTone(sc[stepIdx % sc.length], 0.18, 0.65, 0.015, 'sine');
+      }
+    }
+
+    // Real 3D Depth-Tested Neural Projection Tracts connecting the 3D organs
+    const PATHWAY_DEFS = [
+      { regions: ['raphe', 'pfc'], points: [BRAIN_REGIONS.raphe.anchor, new THREE.Vector3(0.6, -0.5, 0.4), new THREE.Vector3(1.6, 1.4, 3.6), BRAIN_REGIONS.pfc.left] },
+      { regions: ['raphe', 'pfc'], points: [BRAIN_REGIONS.raphe.anchor, new THREE.Vector3(-0.6, -0.5, 0.4), new THREE.Vector3(-1.6, 1.4, 3.6), BRAIN_REGIONS.pfc.right] },
+      { regions: ['raphe', 'hippocampus'], points: [BRAIN_REGIONS.raphe.anchor, new THREE.Vector3(1.5, -2.3, -0.5), BRAIN_REGIONS.hippocampus.left] },
+      { regions: ['raphe', 'hippocampus'], points: [BRAIN_REGIONS.raphe.anchor, new THREE.Vector3(-1.5, -2.3, -0.5), BRAIN_REGIONS.hippocampus.right] },
+      { regions: ['hippocampus', 'amygdala'], points: [BRAIN_REGIONS.hippocampus.left, new THREE.Vector3(2.7, -1.9, 0.8), BRAIN_REGIONS.amygdala.left] },
+      { regions: ['hippocampus', 'amygdala'], points: [BRAIN_REGIONS.hippocampus.right, new THREE.Vector3(-2.7, -1.9, 0.8), BRAIN_REGIONS.amygdala.right] },
+      { regions: ['locus', 'thalamus'], points: [BRAIN_REGIONS.locus.anchor, new THREE.Vector3(0.5, -2.6, -0.9), BRAIN_REGIONS.thalamus.left] },
+      { regions: ['locus', 'thalamus'], points: [BRAIN_REGIONS.locus.anchor, new THREE.Vector3(-0.5, -2.6, -0.9), BRAIN_REGIONS.thalamus.right] },
+      { regions: ['locus', 'pfc'], points: [BRAIN_REGIONS.locus.anchor, new THREE.Vector3(0.8, -1.2, 0.0), new THREE.Vector3(1.8, 2.2, 3.2), BRAIN_REGIONS.pfc.left] },
+      { regions: ['locus', 'pfc'], points: [BRAIN_REGIONS.locus.anchor, new THREE.Vector3(-0.8, -1.2, 0.0), new THREE.Vector3(-1.8, 2.2, 3.2), BRAIN_REGIONS.pfc.right] },
+      { regions: ['striatum', 'pfc'], points: [BRAIN_REGIONS.striatum.left, new THREE.Vector3(1.8, 1.5, 4.0), BRAIN_REGIONS.pfc.anchor] },
+      { regions: ['striatum', 'pfc'], points: [BRAIN_REGIONS.striatum.right, new THREE.Vector3(-1.8, 1.5, 4.0), BRAIN_REGIONS.pfc.anchor] },
+      { regions: ['striatum', 'thalamus'], points: [BRAIN_REGIONS.thalamus.left, new THREE.Vector3(1.7, 0.0, 0.4), BRAIN_REGIONS.striatum.left] },
+      { regions: ['striatum', 'thalamus'], points: [BRAIN_REGIONS.thalamus.right, new THREE.Vector3(-1.7, 0.0, 0.4), BRAIN_REGIONS.striatum.right] },
+      { regions: ['thalamus', 'pfc'], points: [BRAIN_REGIONS.thalamus.left, new THREE.Vector3(1.8, 1.4, 2.6), BRAIN_REGIONS.pfc.left] },
+      { regions: ['thalamus', 'pfc'], points: [BRAIN_REGIONS.thalamus.right, new THREE.Vector3(-1.8, 1.4, 2.6), BRAIN_REGIONS.pfc.right] },
+      { regions: ['thalamus', 'hippocampus'], points: [BRAIN_REGIONS.thalamus.left, new THREE.Vector3(2.1, -1.1, -0.4), BRAIN_REGIONS.hippocampus.left] },
+      { regions: ['thalamus', 'hippocampus'], points: [BRAIN_REGIONS.thalamus.right, new THREE.Vector3(-2.1, -1.1, -0.4), BRAIN_REGIONS.hippocampus.right] },
+      { regions: ['hippocampus', 'pfc'], points: [BRAIN_REGIONS.hippocampus.left, new THREE.Vector3(3.0, 0.6, 2.6), BRAIN_REGIONS.pfc.left] },
+      { regions: ['hippocampus', 'pfc'], points: [BRAIN_REGIONS.hippocampus.right, new THREE.Vector3(-3.0, 0.6, 2.6), BRAIN_REGIONS.pfc.right] },
+      { regions: ['amygdala', 'pfc'], points: [BRAIN_REGIONS.amygdala.left, new THREE.Vector3(2.2, 0.2, 4.0), BRAIN_REGIONS.pfc.left] },
+      { regions: ['amygdala', 'pfc'], points: [BRAIN_REGIONS.amygdala.right, new THREE.Vector3(-2.2, 0.2, 4.0), BRAIN_REGIONS.pfc.right] },
+      { regions: ['cerebellum', 'pfc'], points: [BRAIN_REGIONS.cerebellum.left, new THREE.Vector3(2.0, -1.6, -1.8), new THREE.Vector3(2.2, 2.0, 2.2), BRAIN_REGIONS.pfc.left] },
+      { regions: ['cerebellum', 'pfc'], points: [BRAIN_REGIONS.cerebellum.right, new THREE.Vector3(-2.0, -1.6, -1.8), new THREE.Vector3(-2.2, 2.0, 2.2), BRAIN_REGIONS.pfc.right] }
+    ];
+
+    // Live molecular neuro-reaction equations per compound
+    const NEURO_REACTIONS = {
+      ssri:       'SERT Blockade → ↑ Synaptic 5-HT → 5-HT1A/2A Firing → ↑ CREB/BDNF',
+      snri:       'SERT + NET Blockade → ↑ 5-HT & NE → ↑ Prefrontal DA Tone',
+      caffeine:   'A1/A2A Antagonism → Disinhibits Striatal D2 → ↑ Cortical Spikes',
+      theanine:   'AMPA/NMDA Modulation → ↑ GABA + 8–12 Hz Thalamocortical Alpha',
+      creatine:   'SLC6A8 Uptake → Cr + ATP ⇌ PCr + ADP → Rapid Synaptic ATP Buffer',
+      stimulant:  'DAT + NET Blockade → ↑ Synaptic DA/NE → D1 & α2A Signal Gain',
+      psilocybin: '5-HT2A Agonism → Layer V Glutamate Burst → Global Entropy + TrkB',
+      magnesium:  'CSF Mg²⁺ Influx → Restores NMDA Mg²⁺ Gate → ↑ Hippocampal LTP',
+      ketamine:   'GABA-Interneuron NMDA Block → Glutamate Surge → AMPA → BDNF/mTORC1',
+      lithium:    'IMPase & GSK-3β Inhibition → ↓ Excitotoxicity → ↑ Bcl-2 Spine Density'
+    };
+
+    // --- STACK PRESETS & PHARMACOLOGICAL INTERACTION ENGINE ---
+    const STACK_PRESETS = [
+      { label: 'Caffeine + L-Theanine', ids: ['caffeine', 'theanine'] },
+      { label: 'Focus Trio (Caff + Thea + Creatine)', ids: ['caffeine', 'theanine', 'creatine'] },
+      { label: 'SSRI + Mg Threonate', ids: ['ssri', 'magnesium'] },
+      { label: 'Creatine + SSRI', ids: ['creatine', 'ssri'] },
+      { label: 'SNRI + L-Theanine', ids: ['snri', 'theanine'] }
+    ];
+
+    function evaluateStackInteraction(drugs) {
+      if (drugs.length < 2) return null;
+      const ids = new Set(drugs.map(d => d.id));
+      const has = (...req) => req.every(r => ids.has(r));
+
+      // Clinical cautions first (highest priority)
+      if (has('lithium', 'psilocybin')) {
+        return {
+          type: 'caution',
+          text: '⚠ High Caution · Lithium + Psilocybin: Case reports link lithium with classical psychedelics to seizures and severe adverse reactions. Avoid combining.'
+        };
+      }
+      if (has('ssri', 'snri')) {
+        return {
+          type: 'caution',
+          text: '⚠ Caution · Dual SERT Blockade (SSRI + SNRI): Overlapping serotonin reuptake inhibition raises serotonin syndrome risk and is avoided clinically.'
+        };
+      }
+      if ((has('ssri', 'psilocybin') || has('snri', 'psilocybin'))) {
+        return {
+          type: 'caution',
+          text: '⚠ Interaction · Blunted 5-HT2A Signaling: Chronic SERT blockade downregulates 5-HT2A receptors, markedly blunting psilocin effects.'
+        };
+      }
+      if (has('stimulant', 'caffeine')) {
+        return {
+          type: 'caution',
+          text: '⚠ Caution · Sympathetic Stacking: Combined DAT/NET blockade + adenosine antagonism amplifies heart rate, blood pressure, and peripheral jitteriness.'
+        };
+      }
+      if (has('stimulant', 'snri')) {
+        return {
+          type: 'caution',
+          text: '⚠ Caution · Additive Noradrenergic Load: Overlapping NET inhibition elevates blood pressure and sympathetic arousal.'
+        };
+      }
+
+      // Well-characterized synergies
+      if (has('caffeine', 'theanine', 'creatine')) {
+        return {
+          type: 'synergy',
+          text: '✦ Synergy · Cognitive Stamina Trio: Adenosine blockade (alertness) + thalamocortical alpha smoothing (calm focus) + expanded cortical phosphocreatine ATP buffering.'
+        };
+      }
+      if (has('caffeine', 'theanine')) {
+        return {
+          type: 'synergy',
+          text: '✦ Classic Synergy · Smooth Alertness: L-Theanine blunts caffeine vasoconstriction and jitteriness while preserving striatal D2 disinhibition and prefrontal vigilance.'
+        };
+      }
+      if (has('creatine', 'ssri')) {
+        return {
+          type: 'synergy',
+          text: '✦ Clinical Synergy · Bioenergetic Augmentation: Expanding prefrontal phosphocreatine reserves accelerates and augments serotonergic synaptic adaptation.'
+        };
+      }
+      if ((has('ssri', 'magnesium') || has('snri', 'magnesium'))) {
+        return {
+          type: 'synergy',
+          text: '✦ Synergy · Plasticity Support: Restored NMDA Mg²⁺ gating complements monoamine elevation to sharpen hippocampal LTP and BDNF signaling.'
+        };
+      }
+      if (has('caffeine', 'creatine')) {
+        return {
+          type: 'synergy',
+          text: '✦ Complementary Stack · Alertness + ATP Buffer: Distinct targets (adenosine antagonism + cellular phosphagen pool) sustain focus under sleep debt.'
+        };
+      }
+
+      // General overlap summary
+      const targetCounts = {};
+      drugs.forEach(d => d.targets.forEach(t => { targetCounts[t] = (targetCounts[t] || 0) + 1; }));
+      const overlaps = Object.entries(targetCounts).filter(([, c]) => c > 1).map(([k]) => BRAIN_REGIONS[k]?.name).filter(Boolean);
+      return {
+        type: 'neutral',
+        text: overlaps.length
+          ? `✦ Combined Stack (${drugs.length} compounds) · Convergent activity in ${overlaps.join(', ')} with blended multi-pathway flow.`
+          : `✦ Combined Stack (${drugs.length} compounds) · Parallel activation across distinct neural circuits.`
+      };
+    }
+
+    // --- APPLICATION STATE ---
+    let activeDrugs = [MEDICINES[0]];
+    let currentDrug = MEDICINES[0];
+    let currentStepIndex = 2; // Start on Peak (Tmax)
+    let stackMode = false;
+    let isPlayingTimeline = false;
+    let playInterval = null;
+
+    // --- POPULATE UI CONTROLS ---
+    function initUI() {
+      const pillsContainer = document.getElementById('medicinePills');
+      pillsContainer.innerHTML = '';
+
+      // "+ Combine" toggle button right at the start of the pill bar
+      const stackBtn = document.createElement('button');
+      stackBtn.className = 'stack-toggle-btn';
+      stackBtn.id = 'stackToggleBtn';
+      stackBtn.innerText = '+ Combine';
+      stackBtn.title = 'Toggle multi-compound stack mode';
+      stackBtn.addEventListener('click', () => {
+        stackMode = !stackMode;
+        stackBtn.classList.toggle('active', stackMode);
+        stackBtn.innerText = stackMode ? '✓ Combining' : '+ Combine';
+        document.getElementById('stackPresets').classList.toggle('visible', stackMode);
+        if (!stackMode && activeDrugs.length > 1) {
+          activeDrugs = [activeDrugs[activeDrugs.length - 1]];
+          applyStackAndTimeline(activeDrugs, currentStepIndex, null);
+        }
+        updateCameraFraming(true);
+      });
+      pillsContainer.appendChild(stackBtn);
+
+      MEDICINES.forEach((med) => {
+        const btn = document.createElement('button');
+        btn.className = `pill-btn ${activeDrugs.some(d => d.id === med.id) ? 'active' : ''}`;
+        btn.dataset.id = med.id;
+        btn.innerHTML = `<span class="pill-indicator" style="background:${med.colorHex}; box-shadow:0 0 6px ${med.colorHex}"></span>${med.name}`;
+        btn.addEventListener('click', (e) => {
+          btn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+          const useStack = stackMode || e.shiftKey;
+          if (useStack) {
+            const existsIdx = activeDrugs.findIndex(d => d.id === med.id);
+            if (existsIdx !== -1) {
+              if (activeDrugs.length > 1) {
+                activeDrugs.splice(existsIdx, 1);
+                playStepSound(med.id, 0);
+                applyStackAndTimeline(activeDrugs, currentStepIndex, null);
+              }
+            } else {
+              if (activeDrugs.length >= 4) activeDrugs.shift(); // Keep stacks readable (max 4)
+              activeDrugs.push(med);
+              applyStackAndTimeline(activeDrugs, currentStepIndex, med);
+            }
+          } else {
+            activeDrugs = [med];
+            applyStackAndTimeline(activeDrugs, currentStepIndex, med);
+          }
+        });
+        pillsContainer.appendChild(btn);
+      });
+
+      // Populate curated stack presets
+      const presetsContainer = document.getElementById('stackPresets');
+      presetsContainer.innerHTML = '';
+      STACK_PRESETS.forEach((preset) => {
+        const chip = document.createElement('button');
+        chip.className = 'preset-chip';
+        chip.innerText = preset.label;
+        chip.addEventListener('click', () => {
+          const picked = preset.ids.map(id => MEDICINES.find(m => m.id === id)).filter(Boolean);
+          if (picked.length) {
+            activeDrugs = picked;
+            applyStackAndTimeline(activeDrugs, currentStepIndex, picked[picked.length - 1]);
+          }
+        });
+        presetsContainer.appendChild(chip);
+      });
+
+      document.querySelectorAll('.timeline-step').forEach((stepEl) => {
+        stepEl.addEventListener('click', () => {
+          const step = parseInt(stepEl.dataset.step, 10);
+          playStepSound(currentDrug.id, step);
+          applyStackAndTimeline(activeDrugs, step, null);
+        });
+      });
+
+      document.getElementById('playBtn').addEventListener('click', togglePlayTimeline);
+
+      // Subtle sound toggle
+      const soundBtn = document.getElementById('soundBtn');
+      const soundIcon = document.getElementById('soundIcon');
+      soundBtn.addEventListener('click', () => {
+        soundEnabled = !soundEnabled;
+        soundBtn.classList.toggle('muted', !soundEnabled);
+        soundIcon.innerHTML = soundEnabled
+          ? '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>'
+          : '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>';
+        if (soundEnabled) playTone(523.25, 0, 0.35, 0.03, 'sine');
+      });
+
+      const toggleBtn = document.getElementById('cardToggleBtn');
+      const card = document.getElementById('pkCard');
+      toggleBtn.addEventListener('click', () => {
+        card.classList.toggle('collapsed');
+        toggleBtn.innerText = card.classList.contains('collapsed') ? '▴' : '▾';
+        updateCameraFraming(true);
+      });
+    }
+    initUI();
+
+    function togglePlayTimeline() {
+      isPlayingTimeline = !isPlayingTimeline;
+      const playIcon = document.getElementById('playIcon');
+      if (isPlayingTimeline) {
+        playIcon.innerHTML = '<rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect>';
+        // Play subtle tone immediately on start, then on every phase transition
+        playStepSound(currentDrug.id, currentStepIndex);
+        playInterval = setInterval(() => {
+          let nextStep = (currentStepIndex + 1) % 5;
+          playStepSound(currentDrug.id, nextStep);
+          applyStackAndTimeline(activeDrugs, nextStep, null);
+        }, 3000);
+      } else {
+        playIcon.innerHTML = '<polygon points="5 3 19 12 5 21 5 3"></polygon>';
+        clearInterval(playInterval);
+      }
+    }
+
+    // --- THREE.JS ENGINE SETUP ---
+    const container = document.getElementById('webgl-canvas');
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xF9F8F5);
+
+    const camera = new THREE.PerspectiveCamera(36, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true, alpha: true });
+    renderer.setClearColor(0xF9F8F5, 1.0);
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.05;
+    container.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.06;
+    controls.enablePan = false;
+    controls.minDistance = 16.0;
+    controls.maxDistance = 85.0;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 1.35; // Smooth continuous 360° 3D showcase pace
+
+    let currentCameraDist = 42;
+    let currentTargetY = -1.6;
+    let resumeAutoRotateTimer = null;
+
+    function rotateToRegion(regionKey) {
+      const reg = BRAIN_REGIONS[regionKey];
+      if (!reg || !reg.camDir) return;
+      const dir = reg.camDir.clone().normalize();
+      const target = new THREE.Vector3(0, currentTargetY, 0);
+      const endPos = target.clone().addScaledVector(dir, currentCameraDist);
+
+      // Pause autoRotate during focus glide, then resume gentle idle drift
+      controls.autoRotate = false;
+      clearTimeout(resumeAutoRotateTimer);
+
+      const startOffset = camera.position.clone().sub(controls.target);
+      const endOffset = endPos.clone().sub(target);
+      const startSph = new THREE.Spherical().setFromVector3(startOffset);
+      const endSph = new THREE.Spherical().setFromVector3(endOffset);
+
+      // Shortest angular path around Y
+      let dTheta = endSph.theta - startSph.theta;
+      while (dTheta > Math.PI) dTheta -= Math.PI * 2;
+      while (dTheta < -Math.PI) dTheta += Math.PI * 2;
+
+      const anim = { theta: startSph.theta, phi: startSph.phi, radius: startSph.radius, ty: controls.target.y };
+      new TWEEN.Tween(anim)
+        .to({ theta: startSph.theta + dTheta, phi: endSph.phi, radius: currentCameraDist, ty: currentTargetY }, 950)
+        .easing(TWEEN.Easing.Cubic.Out)
+        .onUpdate(() => {
+          const sph = new THREE.Spherical(anim.radius, anim.phi, anim.theta);
+          controls.target.set(0, anim.ty, 0);
+          camera.position.setFromSpherical(sph).add(controls.target);
+        })
+        .onComplete(() => {
+          resumeAutoRotateTimer = setTimeout(() => {
+            controls.autoRotate = true;
+          }, 1200);
+        })
+        .start();
+    }
+
+    function updateCameraFraming(smooth = false) {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const aspect = w / h;
+
+      camera.aspect = aspect;
+      camera.updateProjectionMatrix();
+      renderer.setSize(w, h);
+
+      const hubEl = document.getElementById('bottomHub');
+      const hubHeight = hubEl ? hubEl.offsetHeight + 16 : 160;
+      const topHeight = 52;
+      const usableFraction = Math.max(0.45, (h - hubHeight - topHeight) / h);
+
+      const vFovRad = THREE.MathUtils.degToRad(camera.fov);
+      const hFovRad = 2 * Math.atan(Math.tan(vFovRad / 2) * aspect);
+
+      const brainRadius = 10.6;
+      const distForHeight = brainRadius / (Math.tan(vFovRad / 2) * usableFraction * 0.86);
+      const distForWidth = brainRadius / (Math.tan(hFovRad / 2) * 0.84);
+      const targetDist = Math.max(distForHeight, distForWidth, 38);
+
+      const hubRatio = (hubHeight - topHeight) / h;
+      const targetY = -hubRatio * targetDist * Math.tan(vFovRad / 2) * 0.95;
+
+      currentCameraDist = targetDist;
+      currentTargetY = targetY;
+
+      if (!smooth) {
+        const dir = new THREE.Vector3(-0.72, 0.22, 0.66).normalize();
+        controls.target.set(0, targetY, 0);
+        camera.position.copy(controls.target).addScaledVector(dir, targetDist);
+        controls.update();
+      } else {
+        const curDir = camera.position.clone().sub(controls.target).normalize();
+        const newTarget = new THREE.Vector3(0, targetY, 0);
+        const newPos = newTarget.clone().addScaledVector(curDir, targetDist);
+
+        new TWEEN.Tween(controls.target)
+          .to({ x: newTarget.x, y: newTarget.y, z: newTarget.z }, 320)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .start();
+        new TWEEN.Tween(camera.position)
+          .to({ x: newPos.x, y: newPos.y, z: newPos.z }, 320)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .start();
+      }
+    }
+
+    // --- LIGHTING (SOFT ANATOMICAL STUDIO) ---
+    const ambientLight = new THREE.AmbientLight(0xFFF6F2, 0.86);
+    scene.add(ambientLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xFFFFFF, 0xEADCD5, 0.62);
+    hemiLight.position.set(0, 30, 0);
+    scene.add(hemiLight);
+
+    const mainKeyLight = new THREE.DirectionalLight(0xFFFFFF, 1.22);
+    mainKeyLight.position.set(22, 28, 22);
+    scene.add(mainKeyLight);
+
+    const warmFillLight = new THREE.DirectionalLight(0xFFE4DC, 0.60);
+    warmFillLight.position.set(-22, -10, -20);
+    scene.add(warmFillLight);
+
+    // --- SCENE OBJECT GROUPS ---
+    const brainGroup = new THREE.Group();
+    scene.add(brainGroup);
+
+    const organsGroup = new THREE.Group(); // RenderOrder 1: Opaque 3D internal organs & cerebellum
+    brainGroup.add(organsGroup);
+
+    const circuitsGroup = new THREE.Group(); // RenderOrder 2: Real 3D depth-tested axonal tracts & capsules
+    brainGroup.add(circuitsGroup);
+
+    const cortexDepthGroup = new THREE.Group(); // RenderOrder 3: Depth-only prepass for zero-shard glass cortex
+    brainGroup.add(cortexDepthGroup);
+
+    const cortexColorGroup = new THREE.Group(); // RenderOrder 4: Shaded cortex with 3D volumetric PFC lobe glow
+    brainGroup.add(cortexColorGroup);
+
+    const fxGroup = new THREE.Group();
+    brainGroup.add(fxGroup);
+
+    const neuroReactionsGroup = new THREE.Group(); // RenderOrder 2: Real-time 3D action-potential arcs & synaptic cleft bursts
+    brainGroup.add(neuroReactionsGroup);
+
+    // --- LIVE 3D NEURO-REACTION ENGINE (Action Potentials + Synaptic Exocytosis Bursts) ---
+    const activeSparks = [];
+    const sparkGeo = new THREE.SphereGeometry(0.095, 8, 8);
+    const activeArcs = [];
+    let reactionAccumulator = 0;
+
+    function getRegionSamplePoint(regionKey) {
+      const reg = BRAIN_REGIONS[regionKey];
+      if (!reg) return new THREE.Vector3(0, 0, 0);
+      let base;
+      if (reg.left && reg.right) {
+        base = Math.random() < 0.5 ? reg.left : reg.right;
+      } else {
+        base = reg.anchor || reg.left;
+      }
+      const spread = regionKey === 'pfc' ? 2.4 : (regionKey === 'cerebellum' ? 2.0 : 1.05);
+      return new THREE.Vector3(
+        base.x + (Math.random() - 0.5) * spread * 2,
+        base.y + (Math.random() - 0.5) * spread * 1.4,
+        base.z + (Math.random() - 0.5) * spread * 1.6
+      );
+    }
+
+    // 1. Synaptic Cleft Vesicle Exocytosis Burst (fires when a neurotransmitter reaches a target organ)
+    function spawnSynapticBurst(origin, colorObj) {
+      if (activeSparks.length > 90) return;
+      const count = 5;
+      for (let i = 0; i < count; i++) {
+        const mat = new THREE.MeshBasicMaterial({
+          color: colorObj,
+          transparent: true,
+          opacity: 0.95
+        });
+        const mesh = new THREE.Mesh(sparkGeo, mat);
+        mesh.position.copy(origin);
+        mesh.renderOrder = 2;
+        neuroReactionsGroup.add(mesh);
+
+        const vel = new THREE.Vector3(
+          (Math.random() - 0.5) * 2.8,
+          (Math.random() - 0.5) * 2.8,
+          (Math.random() - 0.5) * 2.8
+        );
+        activeSparks.push({ mesh, vel, life: 0, maxLife: 0.45 + Math.random() * 0.25 });
+      }
+    }
+
+    // 2. Branching 3D Electrical Action-Potential Spike inside an active brain structure
+    function spawnActionPotential(regionKey, colorObj) {
+      if (activeArcs.length > 28) return;
+      const start = getRegionSamplePoint(regionKey);
+      const dir = new THREE.Vector3(
+        (Math.random() - 0.5),
+        (Math.random() - 0.5),
+        (Math.random() - 0.5)
+      ).normalize();
+
+      const pts = [start.clone()];
+      let cur = start.clone();
+      const segs = 5;
+      const segLen = 0.42 + Math.random() * 0.35;
+      for (let i = 0; i < segs; i++) {
+        cur = cur.clone().addScaledVector(dir, segLen);
+        cur.x += (Math.random() - 0.5) * 0.38;
+        cur.y += (Math.random() - 0.5) * 0.38;
+        cur.z += (Math.random() - 0.5) * 0.38;
+        pts.push(cur);
+      }
+
+      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      const mat = new THREE.LineBasicMaterial({
+        color: colorObj,
+        transparent: true,
+        opacity: 0.95
+      });
+      const line = new THREE.Line(geo, mat);
+      line.renderOrder = 2;
+      neuroReactionsGroup.add(line);
+
+      // Soma depolarization flash at origin
+      const somaMat = new THREE.MeshBasicMaterial({
+        color: 0xFFFFFF,
+        transparent: true,
+        opacity: 0.95
+      });
+      const soma = new THREE.Mesh(sparkGeo, somaMat);
+      soma.position.copy(start);
+      soma.scale.setScalar(1.35);
+      soma.renderOrder = 2;
+      neuroReactionsGroup.add(soma);
+
+      activeArcs.push({ line, soma, life: 0, maxLife: 0.22 + Math.random() * 0.16 });
+    }
+
+    // --- SHARED 3D CORTICAL VOLUMETRIC HIGHLIGHT & SPREADING WAVEFRONT SHADER UNIFORMS ---
+    const cortexUniforms = {
+      uHighlightColor: { value: new THREE.Color(0x6F8FFF) },
+      uPfcIntensity: { value: 0.0 },
+      uShellOpacity: { value: 0.36 },
+      uPulseTime: { value: 0.0 },
+      uImpactPulse: { value: 0.0 },
+      uSpreadOrigin: { value: new THREE.Vector3(0, 7.6, 1.5) },
+      uSpreadRadius: { value: 30.0 },
+      uSpreadStrength: { value: 0.0 }
+    };
+
+    function enhanceCortexMaterial(mat) {
+      mat.transparent = true;
+      mat.depthWrite = false;
+      mat.depthFunc = THREE.EqualDepth; // Uses Pass 3 depth-prepass -> ZERO alpha-sorting shards!
+      mat.onBeforeCompile = (shader) => {
+        shader.uniforms.uHighlightColor = cortexUniforms.uHighlightColor;
+        shader.uniforms.uPfcIntensity = cortexUniforms.uPfcIntensity;
+        shader.uniforms.uShellOpacity = cortexUniforms.uShellOpacity;
+        shader.uniforms.uPulseTime = cortexUniforms.uPulseTime;
+        shader.uniforms.uImpactPulse = cortexUniforms.uImpactPulse;
+        shader.uniforms.uSpreadOrigin = cortexUniforms.uSpreadOrigin;
+        shader.uniforms.uSpreadRadius = cortexUniforms.uSpreadRadius;
+        shader.uniforms.uSpreadStrength = cortexUniforms.uSpreadStrength;
+
+        shader.vertexShader = shader.vertexShader
+          .replace(
+            '#include <common>',
+            `#include <common>
+             varying vec3 vBrainPos;`
+          )
+          .replace(
+            '#include <begin_vertex>',
+            `#include <begin_vertex>
+             vBrainPos = transformed;`
+          );
+
+        shader.fragmentShader = shader.fragmentShader
+          .replace(
+            '#include <common>',
+            `#include <common>
+             varying vec3 vBrainPos;
+             uniform vec3 uHighlightColor;
+             uniform float uPfcIntensity;
+             uniform float uShellOpacity;
+             uniform float uPulseTime;
+             uniform float uImpactPulse;
+             uniform vec3 uSpreadOrigin;
+             uniform float uSpreadRadius;
+             uniform float uSpreadStrength;`
+          )
+          .replace(
+            '#include <dithering_fragment>',
+            `
+            // 3D Volumetric Spreading Wavefront radiating from droplet impact / entry point
+            float distFromOrigin = length(vBrainPos - uSpreadOrigin);
+            float waveBand = exp(-pow((distFromOrigin - uSpreadRadius) * 0.65, 2.0)) * uSpreadStrength;
+            float spreadPassed = smoothstep(uSpreadRadius + 1.8, uSpreadRadius - 1.2, distFromOrigin);
+
+            // Real 3D anatomical Prefrontal Cortex mask (anterior frontal pole Z > 2.4)
+            float pfcZ = smoothstep(2.4, 5.8, vBrainPos.z);
+            float pfcY = smoothstep(-2.4, 0.2, vBrainPos.y);
+            float pfcMask = pfcZ * pfcY * uPfcIntensity * mix(1.0, spreadPassed, step(0.01, uSpreadStrength));
+
+            // Gentle organic 3D breathing pulse on highlighted cortical gyri
+            float breathe = 0.88 + 0.12 * sin(uPulseTime * 3.0 + vBrainPos.y * 0.4);
+
+            // Tint diffuse & add luminous 3D emissive for both spreading wavefront and active cortical lobe
+            vec3 tinted = mix(gl_FragColor.rgb, uHighlightColor * 1.06, clamp(pfcMask * 0.58 * breathe + waveBand * 0.65, 0.0, 0.9));
+            tinted += uHighlightColor * (pfcMask * 0.28 * breathe + waveBand * 0.45 + uImpactPulse * 0.14);
+
+            // Highlighted PFC & spreading wavefront become solid & vivid in 3D
+            float finalAlpha = mix(uShellOpacity, 0.96, clamp(pfcMask * 1.15 + waveBand * 0.75, 0.0, 1.0));
+            gl_FragColor = vec4(tinted, finalAlpha);
+            #include <dithering_fragment>
+            `
+          );
+      };
+      mat.needsUpdate = true;
+      return mat;
+    }
+
+    // --- LOAD PHOTOGRAPHIC TEXTURES ---
+    const texLoader = new THREE.TextureLoader();
+    const leftTex = texLoader.load('assets/brainfacts/cerebral_left_tex.jpg');
+    const leftAo = texLoader.load('assets/brainfacts/cerebral_left_occlusion_tex.jpg');
+    const rightTex = texLoader.load('assets/brainfacts/cerebral_right_tex.jpg');
+    const rightAo = texLoader.load('assets/brainfacts/cerebral_right_occlusion_tex.jpg');
+    const stemTex = texLoader.load('assets/brainfacts/brainstem_tex.jpg');
+    const stemAo = texLoader.load('assets/brainfacts/brainstem_occlusion_tex.jpg');
+
+    const leftMaterial = enhanceCortexMaterial(new THREE.MeshStandardMaterial({
+      color: 0xF5A4AD,
+      map: leftTex,
+      aoMap: leftAo,
+      aoMapIntensity: 1.15,
+      roughness: 0.50,
+      metalness: 0.03
+    }));
+
+    const rightMaterial = enhanceCortexMaterial(new THREE.MeshStandardMaterial({
+      color: 0xF5A4AD,
+      map: rightTex,
+      aoMap: rightAo,
+      aoMapIntensity: 1.15,
+      roughness: 0.50,
+      metalness: 0.03
+    }));
+
+    const cortexDepthMat = new THREE.MeshBasicMaterial({
+      colorWrite: false,
+      depthWrite: true
+    });
+
+    // Helper for 3D segmented anatomical sub-organs
+    function makeOrganMaterial(baseHex, mapTex = null, aoTex = null) {
+      return new THREE.MeshStandardMaterial({
+        color: baseHex,
+        map: mapTex,
+        aoMap: aoTex,
+        aoMapIntensity: 1.0,
+        roughness: 0.45,
+        metalness: 0.04,
+        emissive: 0x000000,
+        emissiveIntensity: 0.0
+      });
+    }
+
+    // Map every region key to its real 3D anatomical meshes & materials!
+    const organRegions = {
+      cerebellum: { meshes: [], baseColor: new THREE.Color(0xE89AA4) },
+      thalamus:   { meshes: [], baseColor: new THREE.Color(0xDF8894) },
+      raphe:      { meshes: [], baseColor: new THREE.Color(0xECA8B0) }, // Midbrain
+      locus:      { meshes: [], baseColor: new THREE.Color(0xECA8B0) }, // Pons
+      hippocampus:{ meshes: [], baseColor: new THREE.Color(0xE2929D) },
+      amygdala:   { meshes: [], baseColor: new THREE.Color(0xDD8490) },
+      striatum:   { meshes: [], baseColor: new THREE.Color(0xE596A1) }
+    };
+
+    // --- SCULPT REAL 3D ANATOMICAL DEEP ORGANS (Hippocampus, Amygdala, Striatum) ---
+    function buildSculptedDeepOrgans() {
+      // 1. Bilateral 3D Hippocampus (anatomical C-shaped seahorse arch curving into temporal lobe)
+      [-1, 1].forEach((side) => {
+        const hippoCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side * 1.1, 0.2, -1.9),   // Fornix / tail
+          new THREE.Vector3(side * 2.4, -0.3, -2.0),  // Posterior arch
+          new THREE.Vector3(side * 3.1, -1.2, -1.1),  // Body
+          new THREE.Vector3(side * 2.9, -1.9, 0.3),   // Anterior temporal curve
+          new THREE.Vector3(side * 2.5, -2.0, 1.3)    // Pes hippocampi (head)
+        ]);
+        const hippoGeo = new THREE.TubeGeometry(hippoCurve, 32, 0.44, 14, false);
+        // Taper the tail smoothly for anatomical shape
+        const pos = hippoGeo.attributes.position;
+        const v = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i++) {
+          v.fromBufferAttribute(pos, i);
+          const t = Math.floor(i / 15) / 32;
+          const centerPt = hippoCurve.getPoint(Math.min(1, t));
+          const scale = 0.55 + Math.sin(t * Math.PI * 0.85) * 0.65;
+          v.sub(centerPt).multiplyScalar(scale).add(centerPt);
+          pos.setXYZ(i, v.x, v.y, v.z);
+        }
+        hippoGeo.computeVertexNormals();
+
+        const mat = makeOrganMaterial(0xE2929D);
+        const mesh = new THREE.Mesh(hippoGeo, mat);
+        mesh.renderOrder = 1;
+        organsGroup.add(mesh);
+        organRegions.hippocampus.meshes.push(mesh);
+
+        // 2. Bilateral 3D Amygdala (almond-shaped nucleus nestled at anterior tip of Hippocampus)
+        const amygGeo = new THREE.SphereGeometry(0.62, 20, 16);
+        amygGeo.scale(0.95, 0.85, 1.25);
+        const amygMat = makeOrganMaterial(0xDD8490);
+        const amygMesh = new THREE.Mesh(amygGeo, amygMat);
+        amygMesh.position.set(side * 2.45, -1.95, 1.95);
+        amygMesh.rotation.set(0.2, side * -0.25, 0);
+        amygMesh.renderOrder = 1;
+        organsGroup.add(amygMesh);
+        organRegions.amygdala.meshes.push(amygMesh);
+
+        // 3. Bilateral 3D Striatum (C-shaped Caudate Nucleus + Lentiform Putamen + Nucleus Accumbens)
+        const caudateCurve = new THREE.CatmullRomCurve3([
+          new THREE.Vector3(side * 1.5, 0.4, 2.7),    // Head of caudate / accumbens
+          new THREE.Vector3(side * 1.7, 1.7, 1.5),    // Anterior body
+          new THREE.Vector3(side * 1.8, 1.9, -0.5),   // Superior body arching over thalamus
+          new THREE.Vector3(side * 2.1, 1.1, -2.3),   // Posterior curve
+          new THREE.Vector3(side * 2.6, -0.2, -2.2)   // Tail
+        ]);
+        const caudateGeo = new THREE.TubeGeometry(caudateCurve, 28, 0.48, 14, false);
+        const cPos = caudateGeo.attributes.position;
+        for (let i = 0; i < cPos.count; i++) {
+          v.fromBufferAttribute(cPos, i);
+          const t = Math.floor(i / 15) / 28;
+          const centerPt = caudateCurve.getPoint(Math.min(1, t));
+          const scale = 1.35 * (1.0 - t * 0.72); // Thick head -> slender tail
+          v.sub(centerPt).multiplyScalar(scale).add(centerPt);
+          cPos.setXYZ(i, v.x, v.y, v.z);
+        }
+        caudateGeo.computeVertexNormals();
+
+        const striaMat = makeOrganMaterial(0xE596A1);
+        const caudateMesh = new THREE.Mesh(caudateGeo, striaMat);
+        caudateMesh.renderOrder = 1;
+        organsGroup.add(caudateMesh);
+        organRegions.striatum.meshes.push(caudateMesh);
+
+        // Putamen (lateral lentiform body)
+        const putamenGeo = new THREE.SphereGeometry(1.15, 20, 16);
+        putamenGeo.scale(0.68, 0.95, 1.45);
+        const putamenMesh = new THREE.Mesh(putamenGeo, striaMat);
+        putamenMesh.position.set(side * 2.7, 0.35, 0.9);
+        putamenMesh.rotation.set(0.15, side * -0.18, 0);
+        putamenMesh.renderOrder = 1;
+        organsGroup.add(putamenMesh);
+        organRegions.striatum.meshes.push(putamenMesh);
+      });
+    }
+
+    // --- LOAD BRAIN-FACTS 3D ANATOMICAL MESHES ---
+    const bgLoader = new THREE.BufferGeometryLoader();
+    const rawGeos = {};
+
+    function loadGeo(key, path) {
+      return new Promise((resolve, reject) => {
+        bgLoader.load(path, (geo) => {
+          rawGeos[key] = geo;
+          resolve(geo);
+        }, undefined, reject);
+      });
+    }
+
+    Promise.all([
+      loadGeo('left', 'assets/brainfacts/Brain-cerebral_hemisphere-left.bg.json'),
+      loadGeo('right', 'assets/brainfacts/Brain-cerebral_hemisphere-right.bg.json'),
+      loadGeo('cerebellum', 'assets/brainfacts/Brain-cerebellum.bg.json'),
+      loadGeo('midbrain', 'assets/brainfacts/Brain-brain_stem-midbrain.bg.json'),
+      loadGeo('pons', 'assets/brainfacts/Brain-brain_stem-pons.bg.json'),
+      loadGeo('thalamus', 'assets/brainfacts/Brain-thalamus.bg.json')
+    ]).then(() => {
+      // Compute combined bounding box center and bake centering directly into every geometry!
+      const totalBox = new THREE.Box3();
+      Object.values(rawGeos).forEach((g) => {
+        g.computeBoundingBox();
+        totalBox.union(g.boundingBox);
+      });
+      const center = totalBox.getCenter(new THREE.Vector3());
+      Object.values(rawGeos).forEach((g) => {
+        g.translate(-center.x, -center.y, -center.z);
+      });
+
+      // 1. Cerebral Hemispheres: Two-pass rendering (Pass 3 depth-prepass + Pass 4 clean glass/highlighted cortex)
+      ['left', 'right'].forEach((side) => {
+        const depthMesh = new THREE.Mesh(rawGeos[side], cortexDepthMat);
+        depthMesh.renderOrder = 3;
+        cortexDepthGroup.add(depthMesh);
+
+        const colorMesh = new THREE.Mesh(rawGeos[side], side === 'left' ? leftMaterial : rightMaterial);
+        colorMesh.renderOrder = 4;
+        cortexColorGroup.add(colorMesh);
+      });
+
+      // 2. Real BrainFacts 3D Segmented Organs (RenderOrder 1: true opaque 3D!)
+      const cerebMesh = new THREE.Mesh(rawGeos.cerebellum, makeOrganMaterial(0xE89AA4));
+      cerebMesh.renderOrder = 1;
+      organsGroup.add(cerebMesh);
+      organRegions.cerebellum.meshes.push(cerebMesh);
+
+      const thalMesh = new THREE.Mesh(rawGeos.thalamus, makeOrganMaterial(0xDF8894));
+      thalMesh.renderOrder = 1;
+      organsGroup.add(thalMesh);
+      organRegions.thalamus.meshes.push(thalMesh);
+
+      const midMesh = new THREE.Mesh(rawGeos.midbrain, makeOrganMaterial(0xE89BA6));
+      midMesh.renderOrder = 1;
+      organsGroup.add(midMesh);
+      organRegions.raphe.meshes.push(midMesh);
+
+      const ponsMesh = new THREE.Mesh(rawGeos.pons, makeOrganMaterial(0xE695A1));
+      ponsMesh.renderOrder = 1;
+      organsGroup.add(ponsMesh);
+      organRegions.locus.meshes.push(ponsMesh);
+
+      // 3. Sculpted 3D Deep Limbic & Basal Ganglia Organs
+      buildSculptedDeepOrgans();
+
+      // 4. Real 3D Depth-Tested Axonal Fiber Tracts & Flowing 3D Capsules
+      initNeuralCircuits();
+
+      // 5. Responsive Framing & Initial Activation
+      updateCameraFraming(false);
+
+      const overlay = document.getElementById('loader-overlay');
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.remove(), 400);
+
+      applyStackAndTimeline(activeDrugs, currentStepIndex, null);
+    }).catch(err => {
+      console.error('Failed to load brain models:', err);
+      document.getElementById('loader-text').innerText = 'Error loading anatomical model. Please refresh.';
+    });
+
+    // --- REAL 3D DEPTH-TESTED AXONAL TRACTS & FLOWING 3D VESICLE CAPSULES ---
+    const pathwayObjects = [];
+
+    function initNeuralCircuits() {
+      // Smooth 3D elongated capsule-like sphere for flowing neurotransmitters
+      const capsuleGeo = new THREE.SphereGeometry(0.16, 12, 12);
+      capsuleGeo.scale(1.0, 1.0, 1.85);
+
+      PATHWAY_DEFS.forEach((def) => {
+        const curve = new THREE.CatmullRomCurve3(def.points);
+
+        const tubeGeo = new THREE.TubeGeometry(curve, 32, 0.055, 8, false);
+        const tubeMat = new THREE.MeshStandardMaterial({
+          color: 0x6F8FFF,
+          emissive: 0x6F8FFF,
+          emissiveIntensity: 0.7,
+          roughness: 0.3,
+          transparent: true,
+          opacity: 0.0
+        });
+        const tubeMesh = new THREE.Mesh(tubeGeo, tubeMat);
+        tubeMesh.renderOrder = 2;
+        circuitsGroup.add(tubeMesh);
+
+        const pulses = [];
+        const count = 3;
+        for (let i = 0; i < count; i++) {
+          const mat = new THREE.MeshStandardMaterial({
+            color: 0xFFFFFF,
+            emissive: 0x6F8FFF,
+            emissiveIntensity: 1.4,
+            roughness: 0.2,
+            transparent: true,
+            opacity: 0.0
+          });
+          const mesh = new THREE.Mesh(capsuleGeo, mat);
+          mesh.renderOrder = 2;
+          circuitsGroup.add(mesh);
+
+          pulses.push({
+            mesh,
+            progress: i / count + Math.random() * 0.15
+          });
+        }
+
+        pathwayObjects.push({
+          regions: def.regions,
+          curve,
+          tube: tubeMesh,
+          pulses,
+          active: false
+        });
+      });
+    }
+
+    // --- 3D GLOSSY DROPLET IMPACT ANIMATION ---
+    function triggerDropAnimation(targetColorInt, onImpact) {
+      const impactPoint = new THREE.Vector3(0, 7.8, 1.5);
+
+      const dropGeo = new THREE.SphereGeometry(0.38, 20, 20);
+      dropGeo.scale(0.85, 1.25, 0.85); // Teardrop 3D silhouette
+      const dropMat = new THREE.MeshStandardMaterial({
+        color: targetColorInt,
+        emissive: targetColorInt,
+        emissiveIntensity: 0.65,
+        roughness: 0.18,
+        metalness: 0.1
+      });
+      const dropMesh = new THREE.Mesh(dropGeo, dropMat);
+      dropMesh.position.set(0, 14.5, 1.5);
+      dropMesh.renderOrder = 5;
+      fxGroup.add(dropMesh);
+
+      new TWEEN.Tween(dropMesh.position)
+        .to({ y: impactPoint.y }, 480)
+        .easing(TWEEN.Easing.Cubic.In)
+        .onComplete(() => {
+          fxGroup.remove(dropMesh);
+          dropGeo.dispose();
+          dropMat.dispose();
+
+          // 3D Torus shockwave ring expanding across top of cortex
+          const ringGeo = new THREE.TorusGeometry(0.45, 0.07, 12, 36);
+          const ringMat = new THREE.MeshStandardMaterial({
+            color: targetColorInt,
+            emissive: targetColorInt,
+            emissiveIntensity: 0.9,
+            transparent: true,
+            opacity: 0.9
+          });
+          const ringMesh = new THREE.Mesh(ringGeo, ringMat);
+          ringMesh.rotation.x = Math.PI / 2;
+          ringMesh.position.copy(impactPoint);
+          ringMesh.renderOrder = 5;
+          fxGroup.add(ringMesh);
+
+          const st = { scale: 1.0, opacity: 0.9 };
+          new TWEEN.Tween(st)
+            .to({ scale: 8.5, opacity: 0.0 }, 650)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .onUpdate(() => {
+              ringMesh.scale.set(st.scale, st.scale, 1);
+              ringMat.opacity = st.opacity;
+            })
+            .onComplete(() => {
+              fxGroup.remove(ringMesh);
+              ringGeo.dispose();
+              ringMat.dispose();
+            })
+            .start();
+
+          // Brief 3D cortex impact flash
+          cortexUniforms.uImpactPulse.value = 1.0;
+          new TWEEN.Tween(cortexUniforms.uImpactPulse)
+            .to({ value: 0.0 }, 600)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+
+          if (onImpact) onImpact();
+        })
+        .start();
+    }
+
+    // --- APPLY SINGLE OR COMBINED STACK TO 3D BRAIN PARTS ---
+    function blendColors(colorInts) {
+      const acc = new THREE.Color(0, 0, 0);
+      colorInts.forEach(c => acc.add(new THREE.Color(c)));
+      acc.multiplyScalar(1 / Math.max(1, colorInts.length));
+      return acc;
+    }
+
+    function applyStackAndTimeline(drugs, stepIdx, droppedDrug = null) {
+      activeDrugs = drugs.length ? drugs : [MEDICINES[0]];
+      currentDrug = activeDrugs[activeDrugs.length - 1];
+      currentStepIndex = stepIdx;
+
+      const isStack = activeDrugs.length > 1;
+      const animateDrop = Boolean(droppedDrug);
+
+      // Build per-region map of which stacked compounds act on each 3D structure at this timeline stage
+      const regionContributors = {}; // regionKey -> [{ drug, intensity }]
+      const allTargetSet = new Set();
+      const allActiveSet = new Set();
+
+      activeDrugs.forEach((drug) => {
+        const sd = drug.timeline[stepIdx];
+        const nodes = sd.chronicNetwork ? drug.targets : sd.glowNodes;
+        drug.targets.forEach(t => allTargetSet.add(t));
+        nodes.forEach((rk) => {
+          allActiveSet.add(rk);
+          if (!regionContributors[rk]) regionContributors[rk] = [];
+          regionContributors[rk].push({ drug, intensity: sd.intensity });
+        });
+      });
+
+      const activeNodes = Array.from(allActiveSet);
+      const allTargets = Array.from(allTargetSet);
+
+      // Update UI Card Header & Multi-Dots
+      const dotsEl = document.getElementById('cardDots');
+      dotsEl.innerHTML = activeDrugs
+        .map(d => `<span class="pk-drug-dot" style="background:${d.colorHex}; color:${d.colorHex};"></span>`)
+        .join('');
+
+      document.getElementById('cardName').innerText = isStack
+        ? activeDrugs.map(d => d.name).join(' + ')
+        : currentDrug.detailName;
+
+      document.getElementById('cardClass').innerText = isStack
+        ? `Combined Stack · ${activeDrugs.length} compounds (${allTargets.length} brain regions)`
+        : currentDrug.subtitle;
+
+      document.getElementById('cardHalfLife').innerText = isStack
+        ? activeDrugs.map(d => d.tHalf.split(' ')[0]).slice(0, 2).join(' / ')
+        : currentDrug.tHalf;
+
+      document.getElementById('cardTmax').innerText = isStack
+        ? activeDrugs.map(d => d.tMax.split(' ')[0]).slice(0, 2).join(' / ')
+        : currentDrug.tMax;
+
+      // Synergy / Interaction Banner
+      const bannerEl = document.getElementById('synergyBanner');
+      const interaction = evaluateStackInteraction(activeDrugs);
+      if (interaction) {
+        bannerEl.className = `synergy-banner visible ${interaction.type}`;
+        bannerEl.innerText = interaction.text;
+      } else {
+        bannerEl.className = 'synergy-banner';
+        bannerEl.innerText = '';
+      }
+
+      // Live Molecular Neuro-Reaction Equation Bar
+      const rxDot = document.getElementById('reactionDot');
+      const rxText = document.getElementById('reactionText');
+      rxDot.style.backgroundColor = currentDrug.colorHex;
+      rxDot.style.boxShadow = `0 0 8px ${currentDrug.colorHex}`;
+      rxText.innerText = isStack
+        ? activeDrugs.map(d => `${d.name}: ${(NEURO_REACTIONS[d.id] || '').split('→')[0].trim()}`).join('  +  ')
+        : (NEURO_REACTIONS[currentDrug.id] || '');
+
+      // Description Box
+      const descEl = document.getElementById('cardDesc');
+      if (isStack) {
+        descEl.innerText = activeDrugs
+          .map(d => `${d.name}: ${d.timeline[stepIdx].desc}`)
+          .join(' ');
+        descEl.style.borderLeftColor = currentDrug.colorHex;
+      } else {
+        descEl.innerText = currentDrug.timeline[stepIdx].desc;
+        descEl.style.borderLeftColor = currentDrug.colorHex;
+      }
+
+      // Clickable Circuit Tags (colored by contributing compound; overlapping regions show dual-dot)
+      const tagsContainer = document.getElementById('cardCircuits');
+      tagsContainer.innerHTML = '';
+      allTargets.forEach((tKey) => {
+        const reg = BRAIN_REGIONS[tKey];
+        if (!reg) return;
+        const contribs = regionContributors[tKey] || [];
+        const isActive = contribs.length > 0;
+        const dotColors = isActive
+          ? contribs.map(c => c.drug.colorHex)
+          : [activeDrugs.find(d => d.targets.includes(tKey))?.colorHex || currentDrug.colorHex];
+
+        const span = document.createElement('span');
+        span.className = `circuit-tag ${isActive ? '' : 'inactive'}`;
+        span.title = `Rotate to ${reg.name}`;
+        const dotsHtml = dotColors
+          .map(hex => `<span style="width:6px; height:6px; border-radius:50%; background:${hex}; flex-shrink:0;"></span>`)
+          .join('');
+        span.innerHTML = `${dotsHtml}${reg.name}`;
+        span.addEventListener('click', () => {
+          playTone((SOUND_CHORDS[currentDrug.id] || SOUND_CHORDS.ssri)[0] * 1.25, 0, 0.45, 0.025, 'sine');
+          rotateToRegion(tKey);
+        });
+        tagsContainer.appendChild(span);
+      });
+
+      document.querySelectorAll('.timeline-step').forEach((el, idx) => {
+        el.classList.toggle('active', idx === stepIdx);
+      });
+
+      document.querySelectorAll('.pill-btn').forEach((btn) => {
+        btn.classList.toggle('active', activeDrugs.some(d => d.id === btn.dataset.id));
+      });
+
+      // Rotate the 3D brain smoothly to the primary site of action (or newest dropped drug's primary target)
+      const focusDrug = droppedDrug || currentDrug;
+      const focusStep = focusDrug.timeline[stepIdx];
+      const focusNodes = focusStep.chronicNetwork ? focusDrug.targets : focusStep.glowNodes;
+      const primaryFocus = focusNodes[0] || focusDrug.targets[0];
+      if (primaryFocus) {
+        rotateToRegion(primaryFocus);
+      }
+
+      const executeVisualTransitions = () => {
+        // 0. 3D Volumetric Medicine Spreading Wavefront
+        const waveDrug = droppedDrug || currentDrug;
+        if (animateDrop) {
+          cortexUniforms.uSpreadOrigin.value.set(0, 7.6, 1.5);
+          cortexUniforms.uSpreadRadius.value = 0.0;
+          cortexUniforms.uSpreadStrength.value = 1.0;
+          new TWEEN.Tween(cortexUniforms.uSpreadRadius)
+            .to({ value: 24.0 }, 1350)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+          new TWEEN.Tween(cortexUniforms.uSpreadStrength)
+            .to({ value: 0.0 }, 1450)
+            .easing(TWEEN.Easing.Quadratic.Out)
+            .start();
+        } else {
+          cortexUniforms.uSpreadRadius.value = 30.0;
+          cortexUniforms.uSpreadStrength.value = 0.0;
+        }
+
+        // 1. Blended 3D Prefrontal Cortex Lobe Shader
+        const pfcContribs = regionContributors.pfc || [];
+        const isPfcActive = pfcContribs.length > 0;
+        const pfcColor = isPfcActive
+          ? blendColors(pfcContribs.map(c => c.drug.colorInt))
+          : new THREE.Color(waveDrug.colorInt);
+        const pfcIntensity = isPfcActive
+          ? Math.min(1.0, Math.max(...pfcContribs.map(c => c.intensity)) + (pfcContribs.length > 1 ? 0.12 : 0))
+          : 0.0;
+        const hasDeepOrgans = activeNodes.some((n) => n !== 'pfc' && n !== 'cerebellum');
+
+        new TWEEN.Tween(cortexUniforms.uHighlightColor.value)
+          .to({ r: pfcColor.r, g: pfcColor.g, b: pfcColor.b }, 380)
+          .start();
+
+        new TWEEN.Tween(cortexUniforms.uPfcIntensity)
+          .to({ value: pfcIntensity }, 520)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .start();
+
+        const desiredShellOpacity = hasDeepOrgans ? 0.34 : 0.78;
+        new TWEEN.Tween(cortexUniforms.uShellOpacity)
+          .to({ value: desiredShellOpacity }, 520)
+          .easing(TWEEN.Easing.Quadratic.Out)
+          .start();
+
+        // 2. Staged 3D Cascade across Segmented Anatomical Organs (with true multi-compound color blending!)
+        Object.entries(organRegions).forEach(([regionKey, data]) => {
+          const contribs = regionContributors[regionKey] || [];
+          const isActive = contribs.length > 0;
+          const activeOrder = activeNodes.indexOf(regionKey);
+          const cascadeDelay = (animateDrop && isActive) ? Math.min(activeOrder, 4) * 140 : 0;
+
+          const blended = isActive ? blendColors(contribs.map(c => c.drug.colorInt)) : data.baseColor;
+          const intensity = isActive
+            ? Math.min(1.0, Math.max(...contribs.map(c => c.intensity)) + (contribs.length > 1 ? 0.12 : 0))
+            : 0.0;
+
+          const dstColor = isActive
+            ? data.baseColor.clone().lerp(blended, 0.78 * intensity + 0.14)
+            : data.baseColor.clone();
+          const dstEmissive = isActive
+            ? blended.clone().multiplyScalar(0.58 * intensity + 0.14)
+            : new THREE.Color(0x000000);
+          const dstScale = isActive ? (1.0 + 0.07 * intensity) : 1.0;
+
+          setTimeout(() => {
+            data.meshes.forEach((mesh) => {
+              new TWEEN.Tween(mesh.material.color)
+                .to({ r: dstColor.r, g: dstColor.g, b: dstColor.b }, 480)
+                .start();
+              new TWEEN.Tween(mesh.material.emissive)
+                .to({ r: dstEmissive.r, g: dstEmissive.g, b: dstEmissive.b }, 480)
+                .start();
+              new TWEEN.Tween(mesh.material)
+                .to({ emissiveIntensity: isActive ? 1.0 : 0.0 }, 480)
+                .start();
+              if (regionKey === 'hippocampus' || regionKey === 'amygdala' || regionKey === 'striatum') {
+                new TWEEN.Tween(mesh.scale)
+                  .to({ x: dstScale, y: dstScale, z: dstScale }, 480)
+                  .start();
+              }
+            });
+          }, cascadeDelay);
+        });
+
+        // 3. Activate union of 3D Axonal Projection Tracts colored by the compound(s) driving each pathway!
+        pathwayObjects.forEach((po) => {
+          const drivingDrugs = activeDrugs.filter((d) => {
+            const sd = d.timeline[stepIdx];
+            const dNodes = sd.chronicNetwork ? d.targets : sd.glowNodes;
+            const bothInDrug = po.regions.every(r => d.targets.includes(r));
+            const bothActive = po.regions.every(r => dNodes.includes(r));
+            const anyActive = po.regions.some(r => dNodes.includes(r));
+            return bothActive || (bothInDrug && anyActive && dNodes.length === 1);
+          });
+
+          const isPathActive = drivingDrugs.length > 0;
+          po.active = isPathActive;
+
+          if (isPathActive) {
+            const pathColor = blendColors(drivingDrugs.map(d => d.colorInt));
+            const pathIntensity = Math.max(...drivingDrugs.map(d => d.timeline[stepIdx].intensity));
+            po.tube.material.color.copy(pathColor);
+            po.tube.material.emissive.copy(pathColor);
+            new TWEEN.Tween(po.tube.material)
+              .to({ opacity: 0.42 + pathIntensity * 0.42 }, 460)
+              .start();
+
+            po.pulses.forEach((p, idx) => {
+              if (animateDrop) p.progress = (idx * 0.18) % 1.0;
+              p.mesh.material.emissive.copy(pathColor);
+              new TWEEN.Tween(p.mesh.material)
+                .to({ opacity: 0.82 + pathIntensity * 0.18 }, 460)
+                .start();
+            });
+          } else {
+            new TWEEN.Tween(po.tube.material).to({ opacity: 0.0 }, 400).start();
+            po.pulses.forEach((p) => {
+              new TWEEN.Tween(p.mesh.material).to({ opacity: 0.0 }, 400).start();
+            });
+          }
+        });
+      };
+
+      if (animateDrop) {
+        playDropSound(droppedDrug.id);
+        triggerDropAnimation(droppedDrug.colorInt, executeVisualTransitions);
+      } else {
+        executeVisualTransitions();
+      }
+    }
+
+    // --- ANIMATION RENDER LOOP ---
+    const clock = new THREE.Clock();
+    const lookTarget = new THREE.Vector3();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      try {
+        const delta = Math.min(clock.getDelta(), 0.05);
+        const time = clock.getElapsedTime();
+
+        TWEEN.update();
+        controls.update();
+
+        cortexUniforms.uPulseTime.value = time;
+
+        const speedMultiplier = Math.max(...activeDrugs.map(d => d.timeline[currentStepIndex].flowSpeed || 0.6));
+        const activeNodesSet = new Set();
+        activeDrugs.forEach((d) => {
+          const sd = d.timeline[currentStepIndex];
+          (sd.chronicNetwork ? d.targets : sd.glowNodes).forEach(n => activeNodesSet.add(n));
+        });
+
+        // 1. Smoothly pulse all active 3D organs across the stack
+        const organPulse = 0.85 + Math.sin(time * 3.2) * 0.18;
+        Object.entries(organRegions).forEach(([regionKey, data]) => {
+          if (activeNodesSet.has(regionKey)) {
+            data.meshes.forEach((m) => {
+              m.material.emissiveIntensity = organPulse;
+            });
+          }
+        });
+
+        // 2. Flow 3D elongated neurotransmitter capsules + trigger synaptic exocytosis bursts at terminals!
+        pathwayObjects.forEach((po) => {
+          if (!po.active && po.tube.material.opacity < 0.01) return;
+          po.pulses.forEach((p) => {
+            const prev = p.progress;
+            p.progress = (p.progress + delta * speedMultiplier * 0.42) % 1.0;
+            const pt = po.curve.getPoint(p.progress);
+            const nextPt = po.curve.getPoint(Math.min(0.999, p.progress + 0.02));
+            p.mesh.position.copy(pt);
+            lookTarget.copy(nextPt);
+            p.mesh.lookAt(lookTarget);
+
+            // When a neurotransmitter capsule arrives at the axon terminal, fire a 3D synaptic cleft burst!
+            if (p.progress < prev && po.active) {
+              const terminalPt = po.curve.getPoint(0.99);
+              spawnSynapticBurst(terminalPt, p.mesh.material.emissive);
+            }
+          });
+        });
+
+        // 3. Fire real-time 3D electrical action-potential spikes inside active brain structures
+        const activeList = Array.from(activeNodesSet);
+        const avgIntensity = Math.max(...activeDrugs.map(d => d.timeline[currentStepIndex].intensity || 0.4));
+        const firingHz = 3.5 + avgIntensity * 11.0; // Scales from sparse 0h baseline to rapid Peak firing!
+        reactionAccumulator += delta * firingHz;
+        while (reactionAccumulator >= 1.0 && activeList.length > 0) {
+          reactionAccumulator -= 1.0;
+          const rk = activeList[Math.floor(Math.random() * activeList.length)];
+          const matchingDrug = activeDrugs.find(d => d.targets.includes(rk)) || currentDrug;
+          spawnActionPotential(rk, new THREE.Color(matchingDrug.colorInt));
+        }
+
+        // Update & decay 3D synaptic quanta sparks
+        for (let i = activeSparks.length - 1; i >= 0; i--) {
+          const s = activeSparks[i];
+          s.life += delta;
+          if (s.life >= s.maxLife) {
+            neuroReactionsGroup.remove(s.mesh);
+            s.mesh.material.dispose();
+            activeSparks.splice(i, 1);
+          } else {
+            s.mesh.position.addScaledVector(s.vel, delta);
+            s.vel.multiplyScalar(0.94);
+            const k = 1.0 - s.life / s.maxLife;
+            s.mesh.material.opacity = k;
+            s.mesh.scale.setScalar(0.5 + k * 0.7);
+          }
+        }
+
+        // Update & decay 3D branching action-potential arcs
+        for (let i = activeArcs.length - 1; i >= 0; i--) {
+          const a = activeArcs[i];
+          a.life += delta;
+          if (a.life >= a.maxLife) {
+            neuroReactionsGroup.remove(a.line);
+            neuroReactionsGroup.remove(a.soma);
+            a.line.geometry.dispose();
+            a.line.material.dispose();
+            a.soma.material.dispose();
+            activeArcs.splice(i, 1);
+          } else {
+            const k = 1.0 - a.life / a.maxLife;
+            a.line.material.opacity = k * 0.95;
+            a.soma.material.opacity = k;
+            a.soma.scale.setScalar(0.6 + k * 1.1);
+          }
+        }
+
+        renderer.render(scene, camera);
+      } catch (err) {
+        console.error('Render Loop Error:', err);
+      }
+    }
+
+    animate();
+
+    // --- URL DEEP-LINK + WEBMCP (navigator.modelContext) & PROGRAMMATIC AGENT API ---
+    function syncStateFromUrl() {
+      const params = new URLSearchParams(window.location.search);
+      const compParam = params.get('compound') || params.get('compounds');
+      const phaseParam = params.get('phase');
+      if (compParam) {
+        const picked = compParam.split(',')
+          .map(id => MEDICINES.find(m => m.id === id.trim().toLowerCase()))
+          .filter(Boolean)
+          .slice(0, 4);
+        if (picked.length) {
+          activeDrugs = picked;
+          currentDrug = picked[picked.length - 1];
+          if (picked.length > 1) {
+            stackMode = true;
+            const sb = document.getElementById('stackToggleBtn');
+            if (sb) { sb.classList.add('active'); sb.innerText = '✓ Combining'; }
+            document.getElementById('stackPresets')?.classList.add('visible');
+          }
+        }
+      }
+      if (phaseParam !== null) {
+        const p = parseInt(phaseParam, 10);
+        if (!Number.isNaN(p) && p >= 0 && p <= 4) currentStepIndex = p;
+      }
+    }
+    syncStateFromUrl();
+
+    const neurochemApi = {
+      listCompounds() {
+        return MEDICINES.map(m => ({
+          id: m.id,
+          name: m.detailName,
+          class: m.subtitle,
+          tHalf: m.tHalf,
+          tMax: m.tMax,
+          targets: m.targets,
+          reaction: NEURO_REACTIONS[m.id]
+        }));
+      },
+      selectCompounds(ids, phase = currentStepIndex) {
+        const arr = Array.isArray(ids) ? ids : [ids];
+        const picked = arr.map(id => MEDICINES.find(m => m.id === String(id).toLowerCase())).filter(Boolean).slice(0, 4);
+        if (!picked.length) return { error: 'No matching compounds found', available: MEDICINES.map(m => m.id) };
+        const clampedPhase = Math.max(0, Math.min(4, Number.isFinite(phase) ? phase : currentStepIndex));
+        stackMode = picked.length > 1;
+        const sb = document.getElementById('stackToggleBtn');
+        if (sb) { sb.classList.toggle('active', stackMode); sb.innerText = stackMode ? '✓ Combining' : '+ Combine'; }
+        document.getElementById('stackPresets')?.classList.toggle('visible', stackMode);
+        applyStackAndTimeline(picked, clampedPhase, picked[picked.length - 1]);
+        return {
+          activeCompounds: picked.map(d => d.id),
+          phase: clampedPhase,
+          interaction: evaluateStackInteraction(picked),
+          reactions: picked.map(d => ({ id: d.id, reaction: NEURO_REACTIONS[d.id], phaseDesc: d.timeline[clampedPhase].desc }))
+        };
+      },
+      setTimelinePhase(phase) {
+        const clamped = Math.max(0, Math.min(4, parseInt(phase, 10) || 0));
+        applyStackAndTimeline(activeDrugs, clamped, null);
+        return { phase: clamped, activeCompounds: activeDrugs.map(d => d.id) };
+      },
+      focusBrainRegion(regionKey) {
+        if (!BRAIN_REGIONS[regionKey]) return { error: 'Unknown region', available: Object.keys(BRAIN_REGIONS) };
+        rotateToRegion(regionKey);
+        return { focused: regionKey, name: BRAIN_REGIONS[regionKey].name };
+      },
+      checkStackInteraction(ids) {
+        const picked = (Array.isArray(ids) ? ids : []).map(id => MEDICINES.find(m => m.id === String(id).toLowerCase())).filter(Boolean);
+        return { compounds: picked.map(d => d.id), interaction: evaluateStackInteraction(picked) };
+      }
+    };
+    window.neurochem = neurochemApi;
+
+    // Register WebMCP tools when supported by agentic browsers
+    if (navigator.modelContext && typeof navigator.modelContext.registerTool === 'function') {
+      try {
+        navigator.modelContext.registerTool({
+          name: 'select_compounds',
+          description: 'Select or combine up to 4 neuroactive compounds in NeuroChem, animate them in 3D, and return pharmacokinetics, active brain regions, and interactions.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              compounds: { type: 'array', items: { type: 'string', enum: MEDICINES.map(m => m.id) } },
+              phase: { type: 'integer', minimum: 0, maximum: 4, description: '0=0h Ingestion, 1=1h Early, 2=Peak Tmax, 3=t1/2 Clearance, 4=Years Chronic' }
+            },
+            required: ['compounds']
+          },
+          execute: ({ compounds, phase }) => neurochemApi.selectCompounds(compounds, phase)
+        });
+        navigator.modelContext.registerTool({
+          name: 'set_timeline_phase',
+          description: 'Set the pharmacokinetic timeline phase (0=0h, 1=1h, 2=Peak, 3=t1/2, 4=Years) for the active compounds.',
+          inputSchema: {
+            type: 'object',
+            properties: { phase: { type: 'integer', minimum: 0, maximum: 4 } },
+            required: ['phase']
+          },
+          execute: ({ phase }) => neurochemApi.setTimelinePhase(phase)
+        });
+        navigator.modelContext.registerTool({
+          name: 'focus_brain_region',
+          description: 'Rotate the 3D human brain camera smoothly to face a specific anatomical structure.',
+          inputSchema: {
+            type: 'object',
+            properties: { region: { type: 'string', enum: Object.keys(BRAIN_REGIONS) } },
+            required: ['region']
+          },
+          execute: ({ region }) => neurochemApi.focusBrainRegion(region)
+        });
+        navigator.modelContext.registerTool({
+          name: 'check_stack_interaction',
+          description: 'Evaluate pharmacological synergy or clinical caution for a combination of compounds.',
+          inputSchema: {
+            type: 'object',
+            properties: { compounds: { type: 'array', items: { type: 'string', enum: MEDICINES.map(m => m.id) } } },
+            required: ['compounds']
+          },
+          execute: ({ compounds }) => neurochemApi.checkStackInteraction(compounds)
+        });
+        navigator.modelContext.registerTool({
+          name: 'list_compounds',
+          description: 'List all 10 neuroactive compounds with half-life, Tmax, target brain structures, and molecular reactions.',
+          inputSchema: { type: 'object', properties: {} },
+          execute: () => neurochemApi.listCompounds()
+        });
+      } catch (e) {
+        console.warn('WebMCP registration skipped:', e);
+      }
+    }
+
+    // --- RESPONSIVE WINDOW RESIZE ---
+    let resizeTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => updateCameraFraming(false), 60);
+    });
+  </script>
+</body>
+</html>

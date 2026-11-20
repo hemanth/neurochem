@@ -401,6 +401,28 @@
       opacity: 0.42;
     }
 
+    .ref-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9.5px;
+      color: var(--text-sub);
+    }
+
+    .ref-link {
+      color: var(--text-muted);
+      text-decoration: none;
+      border-bottom: 1px dotted rgba(28, 25, 23, 0.25);
+      transition: color 0.15s ease, border-color 0.15s ease;
+    }
+
+    .ref-link:hover {
+      color: var(--text-main);
+      border-bottom-color: var(--text-main);
+    }
+
     /* Tiny Chemical Pill Buttons */
     .medicines-scroll {
       display: flex;
@@ -800,6 +822,9 @@
 
         <!-- Active Neural Circuits -->
         <div class="circuit-tags" id="cardCircuits"></div>
+
+        <!-- Peer-Reviewed Research Citations -->
+        <div class="ref-row" id="cardRefs"></div>
       </div>
     </div>
 
@@ -1472,6 +1497,20 @@
       { regions: ['cerebellum', 'pfc'], points: [BRAIN_REGIONS.cerebellum.left, new THREE.Vector3(2.0, -1.6, -1.8), new THREE.Vector3(2.2, 2.0, 2.2), BRAIN_REGIONS.pfc.left] },
       { regions: ['cerebellum', 'pfc'], points: [BRAIN_REGIONS.cerebellum.right, new THREE.Vector3(-2.0, -1.6, -1.8), new THREE.Vector3(-2.2, 2.0, 2.2), BRAIN_REGIONS.pfc.right] }
     ];
+
+    // Peer-reviewed primary literature citations per compound
+    const RESEARCH_REFS = {
+      ssri:       { label: 'Meyer et al., Am J Psychiatry (2004)', url: 'https://doi.org/10.1176/appi.ajp.161.5.826' },
+      snri:       { label: 'Klamerus et al., J Clin Pharmacol (1992)', url: 'https://doi.org/10.1002/j.1552-4604.1992.tb03875.x' },
+      caffeine:   { label: 'Volkow et al., Transl Psychiatry (2015)', url: 'https://doi.org/10.1038/tp.2015.46' },
+      theanine:   { label: 'Owen et al., Nutr Neurosci (2008)', url: 'https://doi.org/10.1179/147683008X301513' },
+      creatine:   { label: 'Dechent et al., Am J Physiol (1999)', url: 'https://doi.org/10.1152/ajpregu.1999.277.3.R698' },
+      stimulant:  { label: 'Volkow et al., Am J Psychiatry (1998)', url: 'https://doi.org/10.1176/ajp.155.10.1325' },
+      psilocybin: { label: 'Carhart-Harris et al., PNAS (2012) · Shao et al., Neuron (2021)', url: 'https://doi.org/10.1073/pnas.1119598109' },
+      magnesium:  { label: 'Slutsky et al., Neuron (2010)', url: 'https://doi.org/10.1016/j.neuron.2009.12.026' },
+      ketamine:   { label: 'Li et al., Science (2010) · Zanos et al., Nature (2016)', url: 'https://doi.org/10.1126/science.1190287' },
+      lithium:    { label: 'Klein & Melton, PNAS (1996) · Moore et al., Lancet (2000)', url: 'https://doi.org/10.1073/pnas.93.16.8455' }
+    };
 
     // Live molecular neuro-reaction equations per compound
     const NEURO_REACTIONS = {
@@ -2493,6 +2532,16 @@
         tagsContainer.appendChild(span);
       });
 
+      // Peer-Reviewed Literature Citation Links
+      const refsEl = document.getElementById('cardRefs');
+      if (refsEl) {
+        const refItems = activeDrugs
+          .map(d => RESEARCH_REFS[d.id])
+          .filter(Boolean)
+          .map(r => `<a class="ref-link" href="${r.url}" target="_blank" rel="noopener noreferrer">${r.label}</a>`);
+        refsEl.innerHTML = refItems.length ? `<span>Source:</span> ${refItems.join(' · ')}` : '';
+      }
+
       document.querySelectorAll('.timeline-step').forEach((el, idx) => {
         el.classList.toggle('active', idx === stepIdx);
       });
@@ -2789,7 +2838,8 @@
           tHalf: m.tHalf,
           tMax: m.tMax,
           targets: m.targets,
-          reaction: NEURO_REACTIONS[m.id]
+          reaction: NEURO_REACTIONS[m.id],
+          reference: RESEARCH_REFS[m.id]
         }));
       },
       selectCompounds(ids, phase = currentStepIndex) {

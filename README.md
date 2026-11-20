@@ -2,6 +2,10 @@
 
 Drop and combine neuroactive compounds on an anatomical human brain to inspect target regions, synaptic reactions, and pharmacokinetics from `0h` to `years`.
 
+
+https://github.com/user-attachments/assets/654c486c-1e03-4e00-93fc-936b471c28b6
+
+
 [h3manth.com/fun/neurochem](https://h3manth.com/fun/neurochem/)
 
 ```bash

@@ -4,9 +4,9 @@
 
 ## Links
 
-- [Live App](https://hemanth.github.io/neurochem/): Interactive WebGL brain with URL state (`?compound=caffeine,theanine&phase=2`).
-- [Full Pharmacology Reference](https://hemanth.github.io/neurochem/llms-full.txt): Complete 10-compound pharmacokinetics, 5-stage timelines, target structures, and interaction rules.
-- [A2A Agent Card](https://hemanth.github.io/neurochem/agent-card.json): Machine-readable WebMCP tool schemas.
+- [Live App](https://h3manth.com/fun/neurochem/): Interactive WebGL brain with URL state (`?compound=caffeine,theanine&phase=2`).
+- [Full Pharmacology Reference](https://h3manth.com/fun/neurochem/llms-full.txt): Complete 10-compound pharmacokinetics, 5-stage timelines, target structures, and interaction rules.
+- [A2A Agent Card](https://h3manth.com/fun/neurochem/agent-card.json): Machine-readable WebMCP tool schemas.
 - [Source Code](https://github.com/hemanth/neurochem): MIT licensed static web app.
 
 ## WebMCP & Browser Agent API (`navigator.modelContext` / `window.neurochem`)

@@ -3,8 +3,8 @@
   "schemaVersion": "1.0.0",
   "name": "NeuroChem",
   "description": "Interactive anatomical human brain pharmacology and pharmacokinetics explorer in Three.js with 10 compounds, 8 segmented brain structures, 5-stage timelines, multi-compound stacking, synergy/caution detection, and Web Audio sonification.",
-  "url": "https://hemanth.github.io/neurochem/",
-  "documentationUrl": "https://hemanth.github.io/neurochem/llms.txt",
+  "url": "https://h3manth.com/fun/neurochem/",
+  "documentationUrl": "https://h3manth.com/fun/neurochem/llms.txt",
   "version": "1.0.0",
   "provider": {
     "organization": "Hemanth HM",
@@ -84,9 +84,9 @@
   "communication": {
     "preferredChannel": "webmcp",
     "endpoints": {
-      "app": "https://hemanth.github.io/neurochem/",
-      "llms": "https://hemanth.github.io/neurochem/llms.txt",
-      "llmsFull": "https://hemanth.github.io/neurochem/llms-full.txt"
+      "app": "https://h3manth.com/fun/neurochem/",
+      "llms": "https://h3manth.com/fun/neurochem/llms.txt",
+      "llmsFull": "https://h3manth.com/fun/neurochem/llms-full.txt"
     }
   }
 }
